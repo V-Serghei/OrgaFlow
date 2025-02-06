@@ -4,3 +4,15 @@
     build:
       context: .
       dockerfile: Dockerfile
+
+  application:
+    image: application
+    build:
+      context: .
+      dockerfile: Application/Dockerfile
+
+  orgaflow.application:
+    image: orgaflow.application
+    build:
+      context: .
+      dockerfile: OrgaFlow.Application/Dockerfile
