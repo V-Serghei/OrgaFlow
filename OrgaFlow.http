@@ -1,6 +1,0 @@
-@OrgaFlow_HostAddress = http://localhost:5102
-
-GET {{OrgaFlow_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

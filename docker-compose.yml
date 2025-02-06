@@ -1,18 +1,32 @@
-﻿services:
+﻿version: '3.8'
+
+services:
   orgaflow:
     image: orgaflow
     build:
       context: .
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=OrgaFlowDb;Username=postgres;Password=secret
+    depends_on:
+      - db
 
-  application:
-    image: application
-    build:
-      context: .
-      dockerfile: Application/Dockerfile
+  db:
+    image: postgres:15
+    container_name: orgaflow_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: OrgaFlowDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  orgaflow.application:
-    image: orgaflow.application
-    build:
-      context: .
-      dockerfile: OrgaFlow.Application/Dockerfile
+volumes:
+  postgres_data:

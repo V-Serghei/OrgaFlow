@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-
 namespace OrgaFlow.Application.Controllers;
 
 [ApiController]
