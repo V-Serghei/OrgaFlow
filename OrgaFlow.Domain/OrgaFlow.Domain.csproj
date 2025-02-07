@@ -8,11 +8,11 @@
 
     <ItemGroup>
       <Folder Include="DTO\" />
-      <Folder Include="Interfaces\" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="GR.Identity.Razor.Users" Version="1.9.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
     </ItemGroup>
 
 </Project>
