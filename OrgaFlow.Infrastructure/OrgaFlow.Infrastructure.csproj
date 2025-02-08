@@ -8,6 +8,18 @@
 
     <ItemGroup>
       <Folder Include="AuthService\" />
+      <Folder Include="Dependencies\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AutoMapper" Version="9.0.0" />
+      <PackageReference Include="GR.Core" Version="1.9.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\OrgaFlow.Domain\OrgaFlow.Domain.csproj" />
+      <ProjectReference Include="..\OrgaFlow.Persistence\OrgaFlow.Persistence.csproj" />
     </ItemGroup>
 
 </Project>

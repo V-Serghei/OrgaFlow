@@ -7,8 +7,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Configuration\" />
-      <Folder Include="Repository\" />
+      <PackageReference Include="GR.Identity" Version="1.9.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.1">
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        <PrivateAssets>all</PrivateAssets>
+      </PackageReference>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.1" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\OrgaFlow.Domain\OrgaFlow.Domain.csproj" />
     </ItemGroup>
 
 </Project>
