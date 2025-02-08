@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\OrgaFlow.Application\OrgaFlow.Application.csproj" />
       <ProjectReference Include="..\OrgaFlow.Infrastructure\OrgaFlow.Infrastructure.csproj" />
     </ItemGroup>
 
