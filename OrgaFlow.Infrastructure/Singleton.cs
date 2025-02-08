@@ -14,7 +14,9 @@ namespace OrgaFlow.Infrastructure
             Config = TypeAdapterConfig.GlobalSettings;
             Config.Scan(typeof(Singleton).Assembly);
         }
-
+        /// <summary>
+        /// Singleton instance
+        /// </summary>
         public static Singleton Instance
         {
             get
