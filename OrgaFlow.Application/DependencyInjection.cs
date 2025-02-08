@@ -2,7 +2,9 @@
 using Mapster;
 using Microsoft.Extensions.DependencyInjection;
 using OrgaFlow.Application.Mapping;
+using OrgaFlow.Domain.Interfaces;
 using OrgaFlow.Infrastructure;
+using OrgaFlow.Persistence.Repository;
 
 namespace OrgaFlow.Application;
 
@@ -15,7 +17,7 @@ public static class DependencyInjection
             cnf.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
         
-        
+        serviceCollection.AddScoped<IDbRepository, UserRepository>();
         
         MappingConfig.RegisterMaps();
         var config = SingletonConfig.Instance.Config;

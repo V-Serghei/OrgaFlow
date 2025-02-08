@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using OrgaFlow.Domain.Entities;
 using OrgaFlow.Domain.Interfaces;
 using OrgaFlow.Persistence.Configuration;
@@ -9,7 +12,7 @@ public class UserRepository : IDbRepository
 {
     private readonly AppDbContext _context;
 
-    public UserRepository(AppDbContext context, CancellationToken cancellationToken)
+    public UserRepository(AppDbContext context)
     {
         _context = context;
     }

@@ -15,7 +15,7 @@
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -27,6 +27,10 @@
     <ItemGroup>
       <ProjectReference Include="..\OrgaFlow.Application\OrgaFlow.Application.csproj" />
       <ProjectReference Include="..\OrgaFlow.Infrastructure\OrgaFlow.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Controllers\UserControllers\" />
     </ItemGroup>
 
 </Project>
