@@ -1,23 +1,24 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OrgaFlow.Application.Queries.User.GetUserById;
 
 namespace OrgaFlow.Application.Controllers.UserControllers;
 
-[Route("api/[controller]")]
+[Route("api/user")]
 [ApiController]
-public class UserController(IMediator mediator) : ControllerBase
+public class UserController : ControllerBase
 {
-    private readonly IMediator _mediator = mediator;
+    private readonly IMediator _mediator;
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetUser(Guid id)
+    public UserController(IMediator mediator)
     {
-        return null;
+        _mediator = mediator;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateUser( )
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUserById(string id)
     {
-       return null;
+        var user = await _mediator.Send(new GetUserByIdQuery(id));
+        return Ok(user);
     }
 }

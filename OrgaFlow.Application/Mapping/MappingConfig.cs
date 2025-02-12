@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Collections.Generic;
+using AutoMapper;
 using Mapster;
 using OrgaFlow.Application.Queries.User.GetUsers;
 using OrgaFlow.Contracts.Responses;

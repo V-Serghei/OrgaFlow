@@ -1,4 +1,7 @@
-﻿using Mapster;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Mapster;
 using MediatR;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
@@ -16,7 +19,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery,GetUserB
     
     public async Task<GetUserByIdResponse> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        var user = _idbRepository.GetByIdAsync(request.Id, cancellationToken);
+        var user = await _idbRepository.GetByIdAsync(request.Id, cancellationToken);
 
         if (user is null)
         {
