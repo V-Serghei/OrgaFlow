@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Commands\User\UserCreate\" />
       <Folder Include="Commands\User\UserDelete\" />
       <Folder Include="Commands\User\UserUpdate\" />
     </ItemGroup>
