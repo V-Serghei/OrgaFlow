@@ -30,3 +30,15 @@ services:
 
 volumes:
   postgres_data:
+
+  auth-service:
+    image: auth-service
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+
+  task-service:
+    image: task-service
+    build:
+      context: .
+      dockerfile: task-service/Dockerfile
