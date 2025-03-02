@@ -2,6 +2,6 @@ namespace auth_service.Domain.DTO;
 
 public class LoginRequestDto
 {
-    public string Username { get; set; }
-    public string Password { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
 }

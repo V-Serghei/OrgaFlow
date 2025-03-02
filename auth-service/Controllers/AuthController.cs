@@ -26,10 +26,10 @@ namespace auth_service.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto loginRequest)
         {
-            if (loginRequest.Username == "1" && loginRequest.Password == "1")
+            if (loginRequest.UserId == "1" && loginRequest.UserName == "1")
             {
                 var userId = Guid.NewGuid().ToString();
-                var token = _tokenService.GenerateToken(userId, loginRequest.Username);
+                var token = _tokenService.GenerateToken(loginRequest.UserId, loginRequest.UserName);
 
                 var session = new AuthDbSession
                 {
@@ -145,10 +145,39 @@ namespace auth_service.Controllers
 
         // GET: api/auth/validate
         [HttpGet("validate")]
-        [Authorize]
-        public IActionResult ValidateToken()
+        public async Task<IActionResult> ValidateToken([FromHeader(Name = "Authorization")] string authorization)
         {
+            if (string.IsNullOrEmpty(authorization))
+                return Unauthorized("Authorization header is missing.");
+
+            var token = authorization.StartsWith("Bearer ") ? authorization[7..] : authorization;
+            var session = await _authRepository.GetSessionByTokenAsync(token);
+            if (session == null)
+                return Unauthorized("Token is invalid.");
+
+            if (session.Expiration < DateTime.UtcNow)
+            {
+                await _authRepository.DeleteSessionAsync(session.Id);
+                return Unauthorized("Token has expired.");
+            }
             return Ok("Token is valid.");
+        }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromHeader(Name = "Authorization")] string authorization)
+        {
+            if (string.IsNullOrEmpty(authorization))
+                return BadRequest("Authorization header is missing.");
+
+            var token = authorization.StartsWith("Bearer ") ? authorization[7..] : authorization;
+            var session = await _authRepository.GetSessionByTokenAsync(token);
+            if (session == null)
+                return BadRequest("Invalid token.");
+
+            var result = await _authRepository.DeleteSessionAsync(session.Id);
+            if (result)
+                return Ok("Logged out successfully.");
+
+            return BadRequest("Failed to logout.");
         }
     }
 }

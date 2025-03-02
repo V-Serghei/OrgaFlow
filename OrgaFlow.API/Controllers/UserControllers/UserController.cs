@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using System.Net.Http.Headers;
+using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Application.Commands.User.UserCreate;
@@ -56,11 +57,39 @@ public class UserController : ControllerBase
         }
 
         var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,       
+            Secure = true,         
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddMinutes(60) 
+        };
+        Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
 
         return Ok(new
         {
             User = response,
             Token = authResult.Token
         });
+    }
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+        {
+            return BadRequest("Auth token not found in cookies.");
+        }
+
+        var httpClient = _httpClientFactory.CreateClient("AuthService");
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await httpClient.PostAsync("logout", null);
+        if (!response.IsSuccessStatusCode)
+        {
+            return BadRequest("Logout failed at AuthService.");
+        }
+        Response.Cookies.Delete("AuthToken");
+
+        return Ok("Logged out successfully.");
     }
 }
