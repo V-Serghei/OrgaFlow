@@ -3,6 +3,7 @@ using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Application.Commands.User.UserCreate;
+using OrgaFlow.Application.Commands.User.UserDelete;
 using OrgaFlow.Application.Queries.User.GetUserById;
 using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.Models;
@@ -92,4 +93,38 @@ public class UserController : ControllerBase
 
         return Ok("Logged out successfully.");
     }
+    
+    [HttpDelete("delete-user")]
+    public async Task<IActionResult> DeleteUser()
+    {
+        if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+        {
+            return BadRequest("Auth token not found in cookies.");
+        }
+
+        var httpClient = _httpClientFactory.CreateClient("AuthService");
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var tokenValidationResponse = await httpClient.GetAsync("validate");
+        if (!tokenValidationResponse.IsSuccessStatusCode)
+        {
+            return BadRequest("Invalid authentication token.");
+        }
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var tokenDeletionResponse = await httpClient.DeleteAsync("session-delete");
+        if (!tokenDeletionResponse.IsSuccessStatusCode)
+        {
+            return BadRequest("Failed to delete token.");
+        }
+        var authResult = await tokenDeletionResponse.Content.ReadFromJsonAsync<AuthResponseDeleteDto>();
+        // Call to delete user method (implementation of user deletion assumed elsewhere)
+        var userDeletionResponse = await _mediator.Send(new DeleteUserCommand(authResult.UserId));
+        if (!userDeletionResponse.Success)
+        {
+            return BadRequest("Failed to delete user.");
+        }
+
+        return Ok("User deleted successfully.");
+    }
+    
 }

@@ -50,15 +50,24 @@ public class AuthRepository : IAuthRepository
         return existingSession;
     }
 
-    public async Task<bool> DeleteSessionAsync(Guid sessionId)
+    public async Task<string?> DeleteSessionAsync(string token)
     {
-        var session = await _context.AuthDbSession.FindAsync(sessionId);
-        if (session == null)
+        if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
-            return false;
+            token = token.Substring("Bearer ".Length).Trim();
         }
-        _context.AuthDbSession.Remove(session);
-        await _context.SaveChangesAsync();
-        return true;
+
+        var session = await _context.AuthDbSession.FirstOrDefaultAsync(x => x.Token == token);
+        if (session != null)
+        {
+            var userId = session.UserId; 
+            _context.AuthDbSession.Remove(session);
+            await _context.SaveChangesAsync();
+            return userId;
+        }
+
+        return null; 
     }
+
+
 }

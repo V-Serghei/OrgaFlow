@@ -8,5 +8,5 @@ public interface IDbRepository
     Task<List<User>> GetAllAsync(CancellationToken cancellationToken);
     Task<User?> AddAsync(User user, CancellationToken cancellationToken);
     Task UpdateAsync(User user, CancellationToken cancellationToken);
-    Task DeleteAsync(string id , CancellationToken cancellationToken);
+    Task<bool> DeleteAsync(string id , CancellationToken cancellationToken);
 }

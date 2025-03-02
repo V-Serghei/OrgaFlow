@@ -40,13 +40,16 @@ public class UserRepository:IDbRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(string id,CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(string id,CancellationToken cancellationToken)
     {
         var user = await _context.Users.FindAsync(id,cancellationToken);
         if (user != null)
         {
             _context.Users.Remove(user);
             await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
+
+        return false;
     }
 }

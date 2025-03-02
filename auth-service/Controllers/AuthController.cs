@@ -133,13 +133,16 @@ namespace auth_service.Controllers
         }
 
         // DELETE: api/auth/session/{sessionId}
-        [HttpDelete("session/{sessionId}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteSession(Guid sessionId)
+        [HttpDelete("session-delete")]
+        public async Task<IActionResult> DeleteSession([FromHeader(Name = "Authorization")] string authorization)
         {
-            var result = await _authRepository.DeleteSessionAsync(sessionId);
-            if (result)
-                return Ok("Session deleted successfully.");
+            var result = await _authRepository.DeleteSessionAsync(authorization);
+            if (result != string.Empty)
+                return Ok(new
+                {
+                    Message = "Session deleted successfully.",
+                    UserId = result
+                });
             return BadRequest("Failed to delete session.");
         }
 
@@ -157,7 +160,7 @@ namespace auth_service.Controllers
 
             if (session.Expiration < DateTime.UtcNow)
             {
-                await _authRepository.DeleteSessionAsync(session.Id);
+                await _authRepository.DeleteSessionAsync(session.Token);
                 return Unauthorized("Token has expired.");
             }
             return Ok("Token is valid.");
@@ -173,8 +176,8 @@ namespace auth_service.Controllers
             if (session == null)
                 return BadRequest("Invalid token.");
 
-            var result = await _authRepository.DeleteSessionAsync(session.Id);
-            if (result)
+            var result = await _authRepository.DeleteSessionAsync(session.Token);
+            if (result != string.Empty)
                 return Ok("Logged out successfully.");
 
             return BadRequest("Failed to logout.");
