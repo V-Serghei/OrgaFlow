@@ -3,9 +3,9 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
-namespace auth_service.Services;
-
-public class TokenService
+namespace auth_service.Services
+{
+    public class TokenService
     {
         private readonly string _secret;
         private readonly string _issuer;
@@ -18,14 +18,14 @@ public class TokenService
             _audience = configuration["Jwt:Audience"];
         }
         
-        public string GenerateToken(Guid userId, string username, int expireMinutes = 60)
+        public string GenerateToken(string userId, string username, int expireMinutes = 60)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, userId), 
                 new Claim(JwtRegisteredClaimNames.UniqueName, username),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
@@ -41,7 +41,6 @@ public class TokenService
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        
         public ClaimsPrincipal ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -68,3 +67,4 @@ public class TokenService
             }
         }
     }
+}

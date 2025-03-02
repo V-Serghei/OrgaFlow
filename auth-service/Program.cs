@@ -1,3 +1,4 @@
+using auth_service.Domain.Interfaces;
 using auth_service.Repository;
 using auth_service.Services;
 using Microsoft.EntityFrameworkCore;
@@ -11,14 +12,14 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddDbContext<AuthDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString")));
-builder.Services.AddSingleton<TokenService>();
 
 builder.Services.AddSingleton<TokenService>(provider =>
 {
     var config = provider.GetRequiredService<IConfiguration>();
     return new TokenService(config);
 });
-builder.Services.AddSingleton<InMemoryAuthRepository>();
+
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 
 builder.Services.AddEndpointsApiExplorer();

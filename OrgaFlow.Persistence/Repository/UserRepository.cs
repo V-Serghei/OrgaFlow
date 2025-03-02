@@ -8,7 +8,7 @@ using OrgaFlow.Persistence.Configuration;
 
 namespace OrgaFlow.Persistence.Repository;
 
-public class UserRepository : IDbRepository
+public class UserRepository:IDbRepository
 {
     private readonly AppDbContext _context;
 
@@ -27,10 +27,11 @@ public class UserRepository : IDbRepository
         return await _context.Users.ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(User user,CancellationToken cancellationToken)
+    public async Task<User?> AddAsync(User user,CancellationToken cancellationToken)
     {
         await _context.Users.AddAsync(user,cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        return user;
     }
 
     public async Task UpdateAsync(User user,CancellationToken cancellationToken)

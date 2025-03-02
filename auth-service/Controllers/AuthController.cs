@@ -1,4 +1,5 @@
 using auth_service.Domain.DTO;
+using auth_service.Domain.Interfaces;
 using auth_service.Repository;
 using auth_service.Services;
 using MediatR;
@@ -6,16 +7,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Domain.Entities.EntitiesAuth;
 
-namespace auth_service.Controllers;
-
-[ApiController]
+namespace auth_service.Controllers
+{
+    [ApiController]
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly TokenService _tokenService;
-        private readonly InMemoryAuthRepository _authRepository;
+        private readonly IAuthRepository _authRepository;
 
-        public AuthController(TokenService tokenService, InMemoryAuthRepository authRepository)
+        public AuthController(TokenService tokenService, IAuthRepository authRepository)
         {
             _tokenService = tokenService;
             _authRepository = authRepository;
@@ -27,14 +28,16 @@ namespace auth_service.Controllers;
         {
             if (loginRequest.Username == "1" && loginRequest.Password == "1")
             {
-                var userId = Guid.NewGuid();
+                var userId = Guid.NewGuid().ToString();
                 var token = _tokenService.GenerateToken(userId, loginRequest.Username);
 
                 var session = new AuthDbSession
                 {
+                    Id = Guid.NewGuid(),
                     UserId = userId,
                     Token = token,
-                    Expiration = DateTime.UtcNow.AddMinutes(60)
+                    Expiration = DateTime.UtcNow.AddMinutes(60),
+                    CreatedAt = DateTime.UtcNow
                 };
 
                 var createdSession = await _authRepository.CreateSessionAsync(session);
@@ -43,12 +46,41 @@ namespace auth_service.Controllers;
                 {
                     Success = true,
                     Token = token,
-                    Message = "Успешный вход в систему"
+                    Message = "Successful login"
                 };
 
                 return Ok(response);
             }
-            return Unauthorized(new AuthResponseDto { Success = false, Message = "Неверные учетные данные" });
+            return Unauthorized(new AuthResponseDto { Success = false, Message = "Invalid credentials" });
+        }
+
+        // POST: api/auth/create-token
+        [HttpPost("create-token")]
+        public async Task<IActionResult> CreateToken([FromBody] CreateTokenRequestDto request)
+        {
+            var token = _tokenService.GenerateToken(request.UserId, request.UserName);
+
+            var session = new AuthDbSession
+            {
+                Id = Guid.NewGuid(),
+                UserId = request.UserId,
+                Token = token,
+                Expiration = DateTime.UtcNow.AddMinutes(60),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var createdSession = await _authRepository.CreateSessionAsync(session);
+            if (createdSession == null)
+            {
+                return BadRequest("Error creating session.");
+            }
+
+            return Ok(new AuthResponseDto
+            {
+                Success = true,
+                Token = token,
+                Message = "Token created successfully"
+            });
         }
 
         // GET: api/auth/session/{sessionId}
@@ -59,7 +91,7 @@ namespace auth_service.Controllers;
             var session = await _authRepository.GetSessionAsync(sessionId);
             if (session == null)
             {
-                return NotFound("Сессия не найдена.");
+                return NotFound("Session not found.");
             }
 
             var sessionDto = new SessionDto
@@ -79,17 +111,17 @@ namespace auth_service.Controllers;
         public async Task<IActionResult> UpdateSession(Guid sessionId, [FromBody] SessionDto sessionDto)
         {
             if (sessionId != sessionDto.SessionId)
-                return BadRequest("Несоответствие идентификаторов сессии.");
+                return BadRequest("Session ID mismatch.");
 
             var session = await _authRepository.GetSessionAsync(sessionId);
             if (session == null)
-                return NotFound("Сессия не найдена.");
+                return NotFound("Session not found.");
 
             session.Expiration = DateTime.UtcNow.AddMinutes(60);
             var updatedSession = await _authRepository.UpdateSessionAsync(session);
 
             if (updatedSession == null)
-                return BadRequest("Не удалось обновить сессию.");
+                return BadRequest("Failed to update session.");
 
             return Ok(new SessionDto
             {
@@ -107,8 +139,8 @@ namespace auth_service.Controllers;
         {
             var result = await _authRepository.DeleteSessionAsync(sessionId);
             if (result)
-                return Ok("Сессия успешно удалена.");
-            return BadRequest("Не удалось удалить сессию.");
+                return Ok("Session deleted successfully.");
+            return BadRequest("Failed to delete session.");
         }
 
         // GET: api/auth/validate
@@ -116,6 +148,7 @@ namespace auth_service.Controllers;
         [Authorize]
         public IActionResult ValidateToken()
         {
-            return Ok("Токен действителен.");
+            return Ok("Token is valid.");
         }
     }
+}

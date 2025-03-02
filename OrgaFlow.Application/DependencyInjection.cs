@@ -16,9 +16,8 @@ public static class DependencyInjection
         {
             cnf.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
         });
-        
         serviceCollection.AddScoped<IDbRepository, UserRepository>();
-        
+
         MappingConfig.RegisterMaps();
         var config = SingletonConfig.Instance.Config;
         serviceCollection.AddSingleton(config);
