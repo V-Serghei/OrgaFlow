@@ -1,12 +1,13 @@
 using MediatR;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
+using OrgaFlow.Persistence.Repository;
 
 namespace OrgaFlow.Application.Commands.User.UserDelete;
 
 public class DeleteUserCommandHandler: IRequestHandler<DeleteUserCommand, UserDeleteResponse>
 {
-    
+
     private readonly IDbRepository _userRepository;
 
     public DeleteUserCommandHandler(IDbRepository userRepository)

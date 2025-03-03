@@ -47,7 +47,7 @@ public class UserController : ControllerBase
         var tokenRequest = new
         {
             UserId = response.UserDto.Id,
-            Username = response.UserDto.UserName
+            UserName = response.UserDto.UserName
         };
 
         var authResponse = await httpClient.PostAsJsonAsync("create-token", tokenRequest);
@@ -117,6 +117,7 @@ public class UserController : ControllerBase
             return BadRequest("Failed to delete token.");
         }
         var authResult = await tokenDeletionResponse.Content.ReadFromJsonAsync<AuthResponseDeleteDto>();
+        Response.Cookies.Delete("AuthToken");
         // Call to delete user method (implementation of user deletion assumed elsewhere)
         var userDeletionResponse = await _mediator.Send(new DeleteUserCommand(authResult.UserId));
         if (!userDeletionResponse.Success)
