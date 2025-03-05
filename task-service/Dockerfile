@@ -3,12 +3,15 @@ USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
+ENV ASPNETCORE_ENVIRONMENT=Development
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["task-service/task-service.csproj", "task-service/"]
 RUN dotnet restore "task-service/task-service.csproj"
+COPY ["/OrgaFlow.Domain", "OrgaFlow.Domain"]
+COPY ["/OrgaFlow.Persistence", "OrgaFlow.Persistence"]
 COPY . .
 WORKDIR "/src/task-service"
 RUN dotnet build "task-service.csproj" -c $BUILD_CONFIGURATION -o /app/build
