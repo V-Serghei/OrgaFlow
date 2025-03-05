@@ -38,6 +38,20 @@ builder.Services.AddHttpClient("AuthService", client =>
 {
     ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
 });
+builder.Services.AddHttpClient("TaskService", client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]);
+    })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler
+        {
+            UseCookies = true, // Включаем поддержку куков
+            CookieContainer = new System.Net.CookieContainer()
+        };
+        return handler;
+    });
+
 
 // Register essential MVC components like controllers
 builder.Services.AddControllers();
@@ -51,7 +65,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:5023") // Укажи реальный адрес фронтенда
+            .AllowCredentials() 
+            
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

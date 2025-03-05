@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Authorization;
 using task_service.Application.Tasks.Commands;
 using task_service.Application.Tasks.Queries;
 
@@ -27,13 +28,17 @@ namespace task_service.Controllers
             var token = authorization.StartsWith("Bearer ") ? authorization[7..] : authorization;
             var client = _httpClientFactory.CreateClient("AuthService");
 
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
             var response = await client.GetAsync("validate");
             return response.IsSuccessStatusCode;
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetTaskById(int id, [FromHeader(Name = "Authorization")] string authorization, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTaskById(int id, CancellationToken cancellationToken)
         {
+            string? authorization = Request.Cookies["AuthToken"];
+    
             if (!await ValidateTokenAsync(authorization))
                 return Unauthorized("Invalid or expired token.");
 
@@ -43,9 +48,13 @@ namespace task_service.Controllers
             return Ok(task);
         }
 
+
+
         [HttpGet]
-        public async Task<IActionResult> GetAllTasks([FromHeader(Name = "Authorization")] string authorization, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetAllTasks(CancellationToken cancellationToken)
         {
+            string? authorization = Request.Cookies["AuthToken"];
+    
             if (!await ValidateTokenAsync(authorization))
                 return Unauthorized("Invalid or expired token.");
 
@@ -54,8 +63,10 @@ namespace task_service.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromHeader(Name = "Authorization")] string authorization, [FromBody] CreateTaskCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateTask([FromBody] CreateTaskCommand command, CancellationToken cancellationToken)
         {
+            string? authorization = Request.Cookies["AuthToken"];
+    
             if (!await ValidateTokenAsync(authorization))
                 return Unauthorized("Invalid or expired token.");
 
@@ -64,8 +75,10 @@ namespace task_service.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, [FromHeader(Name = "Authorization")] string authorization, [FromBody] UpdateTaskCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateTask(int id,[FromBody] UpdateTaskCommand command, CancellationToken cancellationToken)
         {
+            string? authorization = Request.Cookies["AuthToken"];
+    
             if (!await ValidateTokenAsync(authorization))
                 return Unauthorized("Invalid or expired token.");
 
@@ -77,8 +90,10 @@ namespace task_service.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTask(int id, [FromHeader(Name = "Authorization")] string authorization, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteTask(int id, CancellationToken cancellationToken)
         {
+            string? authorization = Request.Cookies["AuthToken"];
+    
             if (!await ValidateTokenAsync(authorization))
                 return Unauthorized("Invalid or expired token.");
 

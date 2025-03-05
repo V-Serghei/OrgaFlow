@@ -105,32 +105,34 @@ namespace auth_service.Controllers
             return Ok(sessionDto);
         }
 
-        // PUT: api/auth/session/{sessionId}
-        [HttpPut("session/{sessionId}")]
-        [Authorize]
-        public async Task<IActionResult> UpdateSession(Guid sessionId, [FromBody] SessionDto sessionDto)
+        // PUT: api/auth/update-token
+        [HttpPut("update-token")]
+        public async Task<IActionResult> UpdateToken([FromHeader(Name = "Authorization")] string authorization, [FromBody] CreateTokenRequestDto request)
         {
-            if (sessionId != sessionDto.SessionId)
-                return BadRequest("Session ID mismatch.");
+            if (string.IsNullOrEmpty(authorization))
+                return Unauthorized("Authorization header is missing.");
 
-            var session = await _authRepository.GetSessionAsync(sessionId);
+            var token = authorization.StartsWith("Bearer ") ? authorization[7..] : authorization;
+            var session = await _authRepository.GetSessionByTokenAsync(token);
             if (session == null)
-                return NotFound("Session not found.");
+                return Unauthorized("Token is invalid.");
 
+            var newToken = _tokenService.GenerateToken(request.UserId, request.UserName);
+
+            session.Token = newToken;
             session.Expiration = DateTime.UtcNow.AddMinutes(60);
             var updatedSession = await _authRepository.UpdateSessionAsync(session);
-
             if (updatedSession == null)
-                return BadRequest("Failed to update session.");
+                return BadRequest("Failed to update token.");
 
-            return Ok(new SessionDto
+            return Ok(new AuthResponseDto
             {
-                SessionId = updatedSession.Id,
-                UserId = updatedSession.UserId,
-                Token = updatedSession.Token,
-                Expiration = updatedSession.Expiration
+                Success = true,
+                Token = newToken,
+                Message = "Token updated successfully"
             });
         }
+
 
         // DELETE: api/auth/session/{sessionId}
         [HttpDelete("session-delete")]

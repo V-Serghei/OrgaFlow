@@ -1,21 +1,39 @@
 ﻿version: '3.8'
-
 services:
-  orgaflow:
-    image: orgaflow
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "5095:80"  
+    networks:
+      - orgaflow-net
+
+  task-service:
+    build:
+      context: ./task-service
+      dockerfile: Dockerfile
+    container_name: task-service
+    ports:
+      - "5096:80"  
+    networks:
+      - orgaflow-net
+
+  main-app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile 
+    container_name: main-app
     ports:
-      - "8080:8080"
-      - "8081:8081"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - DbConnectionString=Host=db;Port=5433;Database=OrgaFlowDb;Username=postgres;Password=secret
+      - "80:80"
     depends_on:
-      - db
+      - auth-service
+      - task-service
+    networks:
+      - orgaflow-net
 
-  db:
+  postgres:
     image: postgres:15
     container_name: orgaflow_postgres
     restart: always
@@ -24,21 +42,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
     ports:
-      - "5433:5432"
+      - "5433:5432"  
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - orgaflow-net
+
+networks:
+  orgaflow-net:
+    driver: bridge
 
 volumes:
   postgres_data:
-
-  auth-service:
-    image: auth-service
-    build:
-      context: .
-      dockerfile: auth-service/Dockerfile
-
-  task-service:
-    image: task-service
-    build:
-      context: .
-      dockerfile: task-service/Dockerfile

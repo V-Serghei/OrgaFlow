@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\OrgaFlow.Domain\OrgaFlow.Domain.csproj" />
+    </ItemGroup>
+
 </Project>

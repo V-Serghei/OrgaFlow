@@ -4,8 +4,10 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Application.Commands.User.UserCreate;
 using OrgaFlow.Application.Commands.User.UserDelete;
+using OrgaFlow.Application.Commands.User.UserUpdate;
 using OrgaFlow.Application.Queries.User.GetUserById;
 using OrgaFlow.Contracts.DTO;
+using OrgaFlow.Contracts.DTO.Request;
 using OrgaFlow.Contracts.Models;
 using OrgaFlow.Contracts.Requests;
 using OrgaFlow.Domain.Entities;
@@ -127,5 +129,57 @@ public class UserController : ControllerBase
 
         return Ok("User deleted successfully.");
     }
+    [HttpPut("update")]
+    public async Task<IActionResult> UpdateUser([FromBody] UserModelView updatedUser)
+    {
+        // Проверяем наличие токена в cookies
+        if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+        {
+            return BadRequest("Auth token not found in cookies.");
+        }
+
+        // Обновляем данные пользователя (предполагается, что существует команда UpdateUserCommand)
+        var updateResponse = await _mediator.Send(new UpdateUserCommand(updatedUser.Adapt<UserUpdateRequest>()));
+        if (updateResponse == null || !updateResponse.Success)
+        {
+            return BadRequest("Failed to update user data.");
+        }
+
+        // После успешного обновления вызываем AuthService для обновления токена с новыми данными пользователя
+        var httpClient = _httpClientFactory.CreateClient("AuthService");
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        // Подготавливаем запрос для обновления токена
+        var tokenUpdateRequest = new 
+        {
+            UserId = updatedUser.Id,
+            UserName = updateResponse.UserName
+        };
+
+        var authResponse = await httpClient.PutAsJsonAsync("update-token", tokenUpdateRequest);
+        if (!authResponse.IsSuccessStatusCode)
+        {
+            return BadRequest("Error updating token.");
+        }
+
+        var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+
+        // Обновляем cookie новым токеном
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddMinutes(60)
+        };
+        Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
+
+        return Ok(new 
+        {
+            User = updateResponse,
+            Token = authResult.Token
+        });
+    }
+
     
 }
