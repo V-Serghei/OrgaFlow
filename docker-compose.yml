@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: auth-service
     ports:
-      - "5095:80"  
+      - "5095:8080"  
     networks:
       - orgaflow-net
 
@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
     container_name: task-service
     ports:
-      - "5096:80"  
+      - "5096:8080"  
     networks:
       - orgaflow-net
 
@@ -26,7 +26,7 @@ services:
       dockerfile: Dockerfile 
     container_name: main-app
     ports:
-      - "80:80"
+      - "80:8080"
     depends_on:
       - auth-service
       - task-service
