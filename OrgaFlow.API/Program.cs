@@ -65,7 +65,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:5023") // Укажи реальный адрес фронтенда
+        policy.WithOrigins("http://localhost:3000") 
             .AllowCredentials() 
             
               .AllowAnyMethod()

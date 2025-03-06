@@ -75,7 +75,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskDto taskDto)
         {
-            if (id != taskDto.Id)
+            if (id == 0)
             {
                 return BadRequest("ID в пути и теле запроса не совпадают");
             }
@@ -84,6 +84,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
                 return BadRequest(ModelState);
             }
 
+            taskDto = taskDto with { Id = id };
             var client = CreateClientWithAuthCookie();
             var response = await client.PutAsJsonAsync($"{id}", taskDto);
             if (response.IsSuccessStatusCode)
