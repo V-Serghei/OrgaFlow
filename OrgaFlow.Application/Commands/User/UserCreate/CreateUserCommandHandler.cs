@@ -1,10 +1,13 @@
 ﻿using Mapster;
 using MediatR;
+using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
+using OrgaFlow.Domain.Entities;
+using OrgaFlow.Persistence.Repository;
 
 namespace OrgaFlow.Application.Commands.User.UserCreate
 {
-    public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, int>
+    public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, UserCreatResponse>
     {
         private readonly IDbRepository _userRepository;
 
@@ -13,11 +16,11 @@ namespace OrgaFlow.Application.Commands.User.UserCreate
             _userRepository = userRepository;
         }
 
-        public async Task<int> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+        public async Task<UserCreatResponse> Handle(CreateUserCommand request, CancellationToken cancellationToken)
         {
-            var user =  _userRepository.AddAsync(request.Adapt<Domain.Entities.User>(), cancellationToken);
-
-            return user.Id;
+            var user = await _userRepository.AddAsync(request.UserData.Adapt<Domain.Entities.User>(), cancellationToken);
+            var response = user.Adapt<UserCreatResponse>();
+            return response;
         }
     }
 }

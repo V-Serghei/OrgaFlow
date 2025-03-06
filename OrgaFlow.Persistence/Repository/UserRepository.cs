@@ -8,7 +8,7 @@ using OrgaFlow.Persistence.Configuration;
 
 namespace OrgaFlow.Persistence.Repository;
 
-public class UserRepository : IDbRepository
+public class UserRepository:IDbRepository
 {
     private readonly AppDbContext _context;
 
@@ -27,25 +27,44 @@ public class UserRepository : IDbRepository
         return await _context.Users.ToListAsync(cancellationToken);
     }
 
-    public async Task AddAsync(User user,CancellationToken cancellationToken)
+    public async Task<User?> AddAsync(User user,CancellationToken cancellationToken)
     {
         await _context.Users.AddAsync(user,cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        return user;
     }
 
-    public async Task UpdateAsync(User user,CancellationToken cancellationToken)
+    public async Task<(bool,string,string)> UpdateAsync(User user,CancellationToken cancellationToken)
     {
-        _context.Users.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            var dbUser = await _context.Users.FindAsync(user.Id,cancellationToken);
+            if (dbUser != null)
+            {
+                dbUser = user;
+                await _context.SaveChangesAsync(cancellationToken);
+                if (dbUser.UserName != null) return new(true, "Success", dbUser.UserName);
+            }
+            return new(false, "User not found", "");
+
+        }
+        catch (Exception e)
+        {
+            return new(false, e.Message, "");
+        }
+        
     }
 
-    public async Task DeleteAsync(string id,CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(string id,CancellationToken cancellationToken)
     {
         var user = await _context.Users.FindAsync(id,cancellationToken);
         if (user != null)
         {
             _context.Users.Remove(user);
             await _context.SaveChangesAsync(cancellationToken);
+            return true;
         }
+
+        return false;
     }
 }

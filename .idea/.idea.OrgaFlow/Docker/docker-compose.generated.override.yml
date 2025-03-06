@@ -1,0 +1,60 @@
+# This is a generated file. Not intended for manual editing.
+version: "3.8"
+services:
+  auth-service:
+    build:
+      context: "/home/sitavlas/MyProject/OrgaFlow/auth-service"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/auth-service.dll"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "auth-service:dev"
+    ports: []
+    volumes:
+    - "/home/sitavlas/MyProject/OrgaFlow/auth-service:/app:rw"
+    - "/home/sitavlas/MyProject/OrgaFlow:/src:rw"
+    - "/home/sitavlas/.nuget/packages:/home/app/.nuget/packages"
+    working_dir: "/app"
+  main-app:
+    build:
+      context: "/home/sitavlas/MyProject/OrgaFlow"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/OrgaFlow.API.dll"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "orgaflow.api:dev"
+    ports: []
+    volumes:
+    - "/home/sitavlas/MyProject/OrgaFlow/OrgaFlow.API:/app:rw"
+    - "/home/sitavlas/MyProject/OrgaFlow:/src:rw"
+    - "/home/sitavlas/.nuget/packages:/root/.nuget/packages"
+    working_dir: "/app"
+  task-service:
+    build:
+      context: "/home/sitavlas/MyProject/OrgaFlow/task-service"
+      dockerfile: "Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net8.0/task-service.dll"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "task-service:dev"
+    ports: []
+    volumes:
+    - "/home/sitavlas/MyProject/OrgaFlow/task-service:/app:rw"
+    - "/home/sitavlas/MyProject/OrgaFlow:/src:rw"
+    - "/home/sitavlas/.nuget/packages:/home/app/.nuget/packages"
+    working_dir: "/app"

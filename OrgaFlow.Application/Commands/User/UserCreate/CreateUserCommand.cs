@@ -1,7 +1,9 @@
 ﻿using MediatR;
+using OrgaFlow.Contracts.DTO.Request;
+using OrgaFlow.Contracts.Requests;
+using OrgaFlow.Contracts.Responses;
 
-namespace OrgaFlow.Application.Commands.User.UserCreate
-{
-    public class CreateUserCommand(string firstName, string lastName, string email, string password)
-        : IRequest<int>;
-}
+namespace OrgaFlow.Application.Commands.User.UserCreate;
+
+public record CreateUserCommand(UserCreateRequest UserData)
+        : IRequest<UserCreatResponse>;
