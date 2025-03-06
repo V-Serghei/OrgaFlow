@@ -6,6 +6,7 @@ using OrgaFlow.Application.Commands.User.UserCreate;
 using OrgaFlow.Application.Commands.User.UserDelete;
 using OrgaFlow.Application.Commands.User.UserUpdate;
 using OrgaFlow.Application.Queries.User.GetUserById;
+using OrgaFlow.Application.Queries.User.GetUsers;
 using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.DTO.Request;
 using OrgaFlow.Contracts.Models;
@@ -31,6 +32,12 @@ public class UserController : ControllerBase
     public async Task<IActionResult> GetUserById(string id)
     {
         var user = await _mediator.Send(new GetUserByIdQuery(id));
+        return Ok(user);
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetUser()
+    {
+        var user = await _mediator.Send(new GetUserQuery());
         return Ok(user);
     }
 
