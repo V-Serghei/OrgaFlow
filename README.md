@@ -104,3 +104,116 @@ dotnet ef migrations add Init -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --cont
 dotnet ef database update --verbose -s .\OrgaFlow.API\ -p .\OrgaFlow.Persistence\ --TaskDbContext
 ```
 
+
+## Альтернативный запуск через IDE
+
+Если необходимо запустить приложение без контейнеров, потребуется внести изменения в несколько файлов конфигурации.
+
+### 1. Изменение `appsettings.json` в `OrgaFlow.API`
+Было:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://auth-service:8080/api/auth/"
+  },
+  "TaskService": {
+    "BaseUrl": "http://task-service:8080/api/Task/"
+  }
+}
+```
+Стало:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://localhost:5095/api/auth/"
+  },
+  "TaskService": {
+    "BaseUrl": "http://localhost:5130/api/Task/"
+  }
+}
+```
+
+### 2. Изменение `appsettings.json` в `task-service`
+Было:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://auth-service:8080/api/auth/"
+  }
+}
+```
+Стало:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://localhost:5095/api/auth/"
+  }
+}
+```
+
+### 3. Изменение `appsettings.Development.json` в `task-service`, `auth-service`, `OrgaFlow.API`
+Было:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DbConnectionString": "Host=orgaflow_postgres;Port=5432;Username=postgres;Password=secret;Database=OrgaFlowDb"
+  }
+
+}
+
+```
+Стало:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DbConnectionString": "Host=localhost;Port=5433;Username=postgres;Password=secret;Database=OrgaFlowDb"
+  }
+
+}
+
+```
+После этих изменений приложение можно запускать напрямую через IDE.
+
+

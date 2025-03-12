@@ -128,3 +128,115 @@ Apply the migration:
 dotnet ef database update --verbose -s .\OrgaFlow.API\ -p .\OrgaFlow.Persistence\ --TaskDbContext
 ```
 
+
+## Alternative Startup via IDE
+
+If you need to run the application without containers, you need to make changes to several configuration files.
+
+### 1. Updating `appsettings.json` in `OrgaFlow.API`
+Before:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://auth-service:8080/api/auth/"
+  },
+  "TaskService": {
+    "BaseUrl": "http://task-service:8080/api/Task/"
+  }
+}
+```
+After:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://localhost:5095/api/auth/"
+  },
+  "TaskService": {
+    "BaseUrl": "http://localhost:5130/api/Task/"
+  }
+}
+```
+
+### 2. Updating `appsettings.json` in `task-service`
+Before:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://auth-service:8080/api/auth/"
+  }
+}
+```
+After:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AuthService": {
+    "BaseUrl": "http://localhost:5095/api/auth/"
+  }
+}
+```
+
+### 3. Updating `appsettings.Development.json` in `task-service`, `auth-service`, `OrgaFlow.API`
+Before:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DbConnectionString": "Host=orgaflow_postgres;Port=5432;Username=postgres;Password=secret;Database=OrgaFlowDb"
+  }
+
+}
+
+```
+After:
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DbConnectionString": "Host=localhost;Port=5433;Username=postgres;Password=secret;Database=OrgaFlowDb"
+  }
+
+}
+
+```
+After making these changes, the application can be run directly from an IDE.
+
