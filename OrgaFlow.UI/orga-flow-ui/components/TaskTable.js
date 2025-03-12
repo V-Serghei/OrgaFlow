@@ -3,7 +3,7 @@ import Link from 'next/link';
 import api from '../lib/api';
 import '../src/app/globals.css';
 
-const TaskTable = ({ tasks, onEdit, onDelete }) => {
+const TaskTable = ({tasks, onEdit, onDelete}) => {
     const handleDelete = async (id) => {
         try {
             await api.delete(`/${id}`);

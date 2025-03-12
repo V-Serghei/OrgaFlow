@@ -18,7 +18,8 @@ namespace OrgaFlow.Application.Commands.User.UserCreate
 
         public async Task<UserCreatResponse> Handle(CreateUserCommand request, CancellationToken cancellationToken)
         {
-            var user = await _userRepository.AddAsync(request.UserData.Adapt<Domain.Entities.User>(), cancellationToken);
+            var user = await _userRepository.AddAsync(request.UserData.Adapt<Domain.Entities.User>(),
+                cancellationToken);
             var response = user.Adapt<UserCreatResponse>();
             return response;
         }

@@ -24,6 +24,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 client.DefaultRequestHeaders.Add("Cookie", $"AuthToken={authToken}");
             }
+
             return client;
         }
 
@@ -37,6 +38,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
                 var tasks = await response.Content.ReadFromJsonAsync<IEnumerable<TaskDto>>();
                 return Ok(tasks);
             }
+
             return StatusCode((int)response.StatusCode);
         }
 
@@ -51,6 +53,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
                 if (task == null) return NotFound();
                 return Ok(task);
             }
+
             return StatusCode((int)response.StatusCode);
         }
 
@@ -69,6 +72,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
                 var createdTask = await response.Content.ReadFromJsonAsync<TaskDto>();
                 return CreatedAtAction(nameof(GetTaskById), new { id = taskDto.Id }, taskDto);
             }
+
             return StatusCode((int)response.StatusCode);
         }
 
@@ -79,6 +83,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 return BadRequest("ID в пути и теле запроса не совпадают");
             }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -91,6 +96,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 return NoContent();
             }
+
             return StatusCode((int)response.StatusCode);
         }
 
@@ -103,6 +109,7 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 return NoContent();
             }
+
             return StatusCode((int)response.StatusCode);
         }
     }

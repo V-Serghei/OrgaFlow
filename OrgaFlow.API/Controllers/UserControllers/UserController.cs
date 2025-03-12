@@ -34,6 +34,7 @@ public class UserController : ControllerBase
         var user = await _mediator.Send(new GetUserByIdQuery(id));
         return Ok(user);
     }
+
     [HttpGet]
     public async Task<IActionResult> GetUser()
     {
@@ -69,8 +70,8 @@ public class UserController : ControllerBase
         var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true,       
-            Secure = true,         
+            HttpOnly = true,
+            Secure = true,
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddDays(30),
         };
@@ -82,6 +83,7 @@ public class UserController : ControllerBase
             Token = authResult.Token
         });
     }
+
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
@@ -98,11 +100,12 @@ public class UserController : ControllerBase
         {
             return BadRequest("Logout failed at AuthService.");
         }
+
         Response.Cookies.Delete("AuthToken");
 
         return Ok("Logged out successfully.");
     }
-    
+
     [HttpDelete("delete-user")]
     public async Task<IActionResult> DeleteUser()
     {
@@ -119,12 +122,14 @@ public class UserController : ControllerBase
         {
             return BadRequest("Invalid authentication token.");
         }
+
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var tokenDeletionResponse = await httpClient.DeleteAsync("session-delete");
         if (!tokenDeletionResponse.IsSuccessStatusCode)
         {
             return BadRequest("Failed to delete token.");
         }
+
         var authResult = await tokenDeletionResponse.Content.ReadFromJsonAsync<AuthResponseDeleteDto>();
         Response.Cookies.Delete("AuthToken");
         var userDeletionResponse = await _mediator.Send(new DeleteUserCommand(authResult.UserId));
@@ -135,6 +140,7 @@ public class UserController : ControllerBase
 
         return Ok("User deleted successfully.");
     }
+
     [HttpPut("update")]
     public async Task<IActionResult> UpdateUser([FromBody] UserModelView updatedUser)
     {
@@ -152,7 +158,7 @@ public class UserController : ControllerBase
         var httpClient = _httpClientFactory.CreateClient("AuthService");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var tokenUpdateRequest = new 
+        var tokenUpdateRequest = new
         {
             UserId = updatedUser.Id,
             UserName = updateResponse.UserName
@@ -175,12 +181,10 @@ public class UserController : ControllerBase
         };
         Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
 
-        return Ok(new 
+        return Ok(new
         {
             User = updateResponse,
             Token = authResult.Token
         });
     }
-
-    
 }

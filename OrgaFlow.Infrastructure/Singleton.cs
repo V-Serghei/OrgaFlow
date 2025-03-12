@@ -14,6 +14,7 @@ namespace OrgaFlow.Infrastructure
             Config = TypeAdapterConfig.GlobalSettings;
             Config.Scan(typeof(Singleton).Assembly);
         }
+
         /// <summary>
         /// Singleton instance
         /// </summary>
@@ -23,7 +24,7 @@ namespace OrgaFlow.Infrastructure
             {
                 if (_instance == null)
                 {
-                    lock (_lock) 
+                    lock (_lock)
                     {
                         if (_instance == null)
                         {
@@ -31,6 +32,7 @@ namespace OrgaFlow.Infrastructure
                         }
                     }
                 }
+
                 return _instance;
             }
         }
