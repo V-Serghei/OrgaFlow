@@ -72,7 +72,7 @@ public class UserController : ControllerBase
             HttpOnly = true,       
             Secure = true,         
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(60) 
+            Expires = DateTime.UtcNow.AddDays(30),
         };
         Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
 
@@ -127,7 +127,6 @@ public class UserController : ControllerBase
         }
         var authResult = await tokenDeletionResponse.Content.ReadFromJsonAsync<AuthResponseDeleteDto>();
         Response.Cookies.Delete("AuthToken");
-        // Call to delete user method (implementation of user deletion assumed elsewhere)
         var userDeletionResponse = await _mediator.Send(new DeleteUserCommand(authResult.UserId));
         if (!userDeletionResponse.Success)
         {
@@ -139,24 +138,20 @@ public class UserController : ControllerBase
     [HttpPut("update")]
     public async Task<IActionResult> UpdateUser([FromBody] UserModelView updatedUser)
     {
-        // Проверяем наличие токена в cookies
         if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
         {
             return BadRequest("Auth token not found in cookies.");
         }
 
-        // Обновляем данные пользователя (предполагается, что существует команда UpdateUserCommand)
         var updateResponse = await _mediator.Send(new UpdateUserCommand(updatedUser.Adapt<UserUpdateRequest>()));
         if (updateResponse == null || !updateResponse.Success)
         {
             return BadRequest("Failed to update user data.");
         }
 
-        // После успешного обновления вызываем AuthService для обновления токена с новыми данными пользователя
         var httpClient = _httpClientFactory.CreateClient("AuthService");
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        // Подготавливаем запрос для обновления токена
         var tokenUpdateRequest = new 
         {
             UserId = updatedUser.Id,
@@ -171,13 +166,12 @@ public class UserController : ControllerBase
 
         var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
 
-        // Обновляем cookie новым токеном
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddMinutes(60)
+            Expires = DateTime.UtcNow.AddDays(30),
         };
         Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
 

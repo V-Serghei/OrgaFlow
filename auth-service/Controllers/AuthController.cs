@@ -36,7 +36,7 @@ namespace auth_service.Controllers
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     Token = token,
-                    Expiration = DateTime.UtcNow.AddMinutes(60),
+                    Expiration = DateTime.UtcNow.AddDays(30),
                     CreatedAt = DateTime.UtcNow
                 };
 
@@ -65,7 +65,7 @@ namespace auth_service.Controllers
                 Id = Guid.NewGuid(),
                 UserId = request.UserId,
                 Token = token,
-                Expiration = DateTime.UtcNow.AddMinutes(60),
+                Expiration = DateTime.UtcNow.AddDays(30),
                 CreatedAt = DateTime.UtcNow
             };
 
