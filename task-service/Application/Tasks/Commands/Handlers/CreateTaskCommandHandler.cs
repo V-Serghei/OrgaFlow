@@ -13,13 +13,15 @@ public class CreateTaskCommandHandler: IRequestHandler<CreateTaskCommand, ETask>
     }
     public async Task<ETask> Handle(CreateTaskCommand request, CancellationToken cancellationToken)
     {
+        
         var task = new ETask
         {
             Name = request.Name,
             Description = request.Description,
             Status = request.Status,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate
+            StartDate = request.StartDate.ToUniversalTime(),
+            EndDate = request.EndDate.ToUniversalTime(),
+            Notify = request.Notify
         };
         return await _repository.AddTask(task, cancellationToken);
     }

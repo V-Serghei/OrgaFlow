@@ -48,6 +48,17 @@ builder.Services.AddHttpClient("TaskService",
         };
         return handler;
     });
+builder.Services.AddHttpClient("EmailService",
+        client => { client.BaseAddress = new Uri(builder.Configuration["EmailService:BaseUrl"]); })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler
+        {
+            UseCookies = true, 
+            CookieContainer = new System.Net.CookieContainer()
+        };
+        return handler;
+    });
 
 
 // Register essential MVC components like controllers

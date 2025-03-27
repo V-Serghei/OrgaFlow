@@ -41,6 +41,9 @@ namespace OrgaFlow.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Notify")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 

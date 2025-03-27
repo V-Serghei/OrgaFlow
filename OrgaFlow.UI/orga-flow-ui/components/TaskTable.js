@@ -1,21 +1,15 @@
-import React from 'react';
-import Link from 'next/link';
-import api from '../lib/api';
-import '../src/app/globals.css';
-
-const TaskTable = ({tasks, onEdit, onDelete}) => {
-    const handleDelete = async (id) => {
+import React, { useState, useEffect } from 'react';
+import apiNotify from '../lib/apiNotify';
+const TaskTable = ({ tasks, onEdit, onDelete }) => {
+    const handleSubscribe = async (task) => {
         try {
-            await api.delete(`/${id}`);
-            onDelete();
+            await apiNotify.post('/subscribe', task);
+            alert('Подписка на уведомления успешно оформлена!');
         } catch (error) {
-            console.error('Error deleting task:', error);
+            console.error('Error subscribing to notifications:', error);
+            alert('Ошибка при подписке на уведомления.');
         }
     };
-
-    if (tasks.length === 0) {
-        return <p className="text-center text-gray-400">No tasks found.</p>;
-    }
 
     return (
         <div className="overflow-x-auto">
@@ -32,26 +26,12 @@ const TaskTable = ({tasks, onEdit, onDelete}) => {
                 {tasks.map((task) => (
                     <tr key={task.id} className="hover:bg-gray-600 transition-colors duration-300">
                         <td className="px-6 py-4 border-b text-sm text-gray-200">{task.id}</td>
-                        <td className="px-6 py-4 border-b text-sm text-blue-400 hover:underline max-w-xs truncate">
-                            <Link href={`/tasks/${task.id}`}>{task.name}
-                            </Link>
-                        </td>
-                        <td className="px-6 py-4 border-b text-sm text-gray-200 max-w-xs truncate">
-                            {task.description}
-                        </td>
+                        <td className="px-6 py-4 border-b text-sm text-blue-400">{task.name}</td>
+                        <td className="px-6 py-4 border-b text-sm text-gray-200">{task.description}</td>
                         <td className="px-6 py-4 border-b text-sm space-x-2">
-                            <button
-                                onClick={() => onEdit(task)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition transform hover:scale-105"
-                            >
-                                Edit
-                            </button>
-                            <button
-                                onClick={() => handleDelete(task.id)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition transform hover:scale-105"
-                            >
-                                Delete
-                            </button>
+                            <button onClick={() => onEdit(task)} className="bg-blue-600 text-white px-4 py-2 rounded">Edit</button>
+                            <button onClick={() => handleSubscribe(task)} className="bg-green-600 text-white px-4 py-2 rounded">Notify</button>
+                            <button onClick={() => onDelete(task.id)} className="bg-red-600 text-white px-4 py-2 rounded">Delete</button>
                         </td>
                     </tr>
                 ))}
