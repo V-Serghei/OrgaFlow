@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>email_services</RootNamespace>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <DisableStaticWebAssets>true</DisableStaticWebAssets>
     </PropertyGroup>
 
     <ItemGroup>
