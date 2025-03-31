@@ -60,6 +60,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             {/* Mobile Sidebar */}
             <Sheet open={open} onOpenChange={setOpen}>
                 <SheetContent side="left" className="w-64 p-0">
+                    
                     <div className="flex h-16 items-center border-b px-4">
                         <Link href="/" className="flex items-center gap-2">
                             <span className="text-xl font-bold">TaskMaster</span>
@@ -68,6 +69,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
                             <X className="h-5 w-5" />
                         </Button>
                     </div>
+                    
                     <ScrollArea className="h-[calc(100vh-4rem)]">
                         <div className="px-2 py-4">
                             <nav className="flex flex-col gap-1">
@@ -92,7 +94,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             </Sheet>
 
             {/* Desktop Sidebar */}
-            <aside className="hidden w-64 flex-col border-r bg-background md:flex">
+            <aside className="hidden w-64 flex-col border-r bg-background md:flex pt-16">
                 <ScrollArea className="flex-1">
                     <div className="px-2 py-4">
                         <nav className="flex flex-col gap-1">

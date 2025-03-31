@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import { format, isSameDay } from "date-fns"
 import { CalendarIcon, Plus } from 'lucide-react'
 
+
 // Mock events data
 const events = [
     {
@@ -212,15 +213,15 @@ export default function CalendarPage() {
                             showOutsideDays
                             components={{
                                 DayContent: (props) => {
-                                    const day = props.day
+                                    const day = props.date;
 
-                                    if (!(day instanceof Date)) return <div /> // защита от пустых ячеек
+                                    if (!(day instanceof Date)) return <div />;
 
                                     const isSelected =
                                         date &&
                                         day.getDate() === date.getDate() &&
                                         day.getMonth() === date.getMonth() &&
-                                        day.getFullYear() === date.getFullYear()
+                                        day.getFullYear() === date.getFullYear();
 
                                     return (
                                         <div className="flex flex-col items-center">
@@ -234,9 +235,10 @@ export default function CalendarPage() {
                                             </div>
                                             {renderEventBadges(day)}
                                         </div>
-                                    )
+                                    );
                                 },
                             }}
+
                         />
 
                     </CardContent>
