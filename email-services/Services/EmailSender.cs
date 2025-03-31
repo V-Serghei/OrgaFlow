@@ -48,7 +48,7 @@ public class EmailSender : IEmailSender
             Console.WriteLine("Письмо успешно отправлено!");
 
             await client.DisconnectAsync(true);
-            }
+        }
         catch (MailKit.Security.SslHandshakeException ex)
         {
             Console.WriteLine($"Ошибка SSL-соединения: {ex.Message}");
