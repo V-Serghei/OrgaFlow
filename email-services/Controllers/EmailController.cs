@@ -21,4 +21,13 @@ public class EmailController : ControllerBase
         await _emailSender.SendEmailAsync(request);
         return Ok(new { message = "Email sent successfully!" });
     }
+    
+    [HttpPost("inbox")]
+    public async Task<IActionResult> GetInbox([FromBody] EmailAuthRequest auth)
+    {
+        var receiver = HttpContext.RequestServices.GetRequiredService<IEmailReceiver>();
+        var emails = await receiver.ReceiveEmailsAsync(auth);
+        return Ok(emails);
+    }
+
 }
