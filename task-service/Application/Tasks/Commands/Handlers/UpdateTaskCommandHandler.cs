@@ -19,8 +19,8 @@ public class UpdateTaskCommandHandler: IRequestHandler<UpdateTaskCommand, ETask>
             Name = request.Name,
             Description = request.Description,
             Status = request.Status,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate
+            StartDate = request.StartDate.ToUniversalTime(),
+            EndDate = request.EndDate.ToUniversalTime(),
         };
         return await _repository.UpdateTask(task, cancellationToken);
     }

@@ -12,10 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection serviceCollection)
     {
-        serviceCollection.AddMediatR(cnf=>
-        {
-            cnf.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-        });
+        serviceCollection.AddMediatR(cnf => { cnf.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()); });
         serviceCollection.AddScoped<IDbRepository, UserRepository>();
 
         MappingConfig.RegisterMaps();
@@ -23,5 +20,5 @@ public static class DependencyInjection
         serviceCollection.AddSingleton(config);
 
         return serviceCollection;
-    } 
+    }
 }

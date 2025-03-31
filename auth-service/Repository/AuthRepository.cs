@@ -16,7 +16,6 @@ public class AuthRepository : IAuthRepository
 
     public async Task<AuthDbSession> CreateSessionAsync(AuthDbSession session)
     {
-       
         session.CreatedAt = DateTime.UtcNow;
         await _context.AuthDbSession.AddAsync(session);
         await _context.SaveChangesAsync();
@@ -60,14 +59,12 @@ public class AuthRepository : IAuthRepository
         var session = await _context.AuthDbSession.FirstOrDefaultAsync(x => x.Token == token);
         if (session != null)
         {
-            var userId = session.UserId; 
+            var userId = session.UserId;
             _context.AuthDbSession.Remove(session);
             await _context.SaveChangesAsync();
             return userId;
         }
 
-        return null; 
+        return null;
     }
-
-
 }

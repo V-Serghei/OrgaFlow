@@ -51,6 +51,7 @@ namespace auth_service.Controllers
 
                 return Ok(response);
             }
+
             return Unauthorized(new AuthResponseDto { Success = false, Message = "Invalid credentials" });
         }
 
@@ -107,7 +108,8 @@ namespace auth_service.Controllers
 
         // PUT: api/auth/update-token
         [HttpPut("update-token")]
-        public async Task<IActionResult> UpdateToken([FromHeader(Name = "Authorization")] string authorization, [FromBody] CreateTokenRequestDto request)
+        public async Task<IActionResult> UpdateToken([FromHeader(Name = "Authorization")] string authorization,
+            [FromBody] CreateTokenRequestDto request)
         {
             if (string.IsNullOrEmpty(authorization))
                 return Unauthorized("Authorization header is missing.");
@@ -165,8 +167,10 @@ namespace auth_service.Controllers
                 await _authRepository.DeleteSessionAsync(session.Token);
                 return Unauthorized("Token has expired.");
             }
+
             return Ok("Token is valid.");
         }
+
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromHeader(Name = "Authorization")] string authorization)
         {

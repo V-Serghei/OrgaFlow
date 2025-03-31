@@ -9,7 +9,7 @@ namespace task_service.Repository;
 public class TaskRepository
 {
     private readonly TaskDbContext _context;
-    
+
     public TaskRepository(TaskDbContext context)
     {
         _context = context;

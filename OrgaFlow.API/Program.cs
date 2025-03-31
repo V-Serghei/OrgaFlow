@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,22 +30,31 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 });
 
 // Configure HttpClient for external AuthService with custom handler
-builder.Services.AddHttpClient("AuthService", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]);
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-});
-builder.Services.AddHttpClient("TaskService", client =>
+builder.Services
+    .AddHttpClient("AuthService",
+        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]); })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
-        client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]);
-    })
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
+builder.Services.AddHttpClient("TaskService",
+        client => { client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]); })
     .ConfigurePrimaryHttpMessageHandler(() =>
     {
         var handler = new HttpClientHandler
         {
             UseCookies = true, // Включаем поддержку куков
+            CookieContainer = new System.Net.CookieContainer()
+        };
+        return handler;
+    });
+builder.Services.AddHttpClient("EmailService",
+        client => { client.BaseAddress = new Uri(builder.Configuration["EmailService:BaseUrl"]); })
+    .ConfigurePrimaryHttpMessageHandler(() =>
+    {
+        var handler = new HttpClientHandler
+        {
+            UseCookies = true, 
             CookieContainer = new System.Net.CookieContainer()
         };
         return handler;
@@ -65,10 +73,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") 
+        policy.WithOrigins("http://localhost:3000")
             .AllowCredentials()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 

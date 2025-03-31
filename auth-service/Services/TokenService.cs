@@ -17,7 +17,7 @@ namespace auth_service.Services
             _issuer = configuration["Jwt:Issuer"];
             _audience = configuration["Jwt:Audience"];
         }
-        
+
         public string GenerateToken(string userId, string username, int expireMinutes = 60)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
@@ -25,7 +25,7 @@ namespace auth_service.Services
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId), 
+                new Claim(JwtRegisteredClaimNames.Sub, userId),
                 new Claim(JwtRegisteredClaimNames.UniqueName, username),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };

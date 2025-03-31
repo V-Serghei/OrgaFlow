@@ -10,13 +10,13 @@ MappingConfig.RegisterMaps();
 builder.Services.AddDbContext<TaskDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DbConnectionString")));
 
-builder.Services.AddHttpClient("AuthService", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]);
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
-});
+builder.Services
+    .AddHttpClient("AuthService",
+        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]); })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
 builder.Services.AddScoped<TaskRepository>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddControllers();

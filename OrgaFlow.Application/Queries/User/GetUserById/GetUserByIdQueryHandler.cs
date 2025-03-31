@@ -8,7 +8,7 @@ using OrgaFlow.Domain.Interfaces;
 
 namespace OrgaFlow.Application.Queries.User.GetUserById;
 
-public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery,GetUserByIdResponse>
+public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery, GetUserByIdResponse>
 {
     private readonly IDbRepository _idbRepository;
 
@@ -16,7 +16,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery,GetUserB
     {
         _idbRepository = idbRepository;
     }
-    
+
     public async Task<GetUserByIdResponse> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
         var user = await _idbRepository.GetByIdAsync(request.Id, cancellationToken);
@@ -25,7 +25,7 @@ public class GetUserByIdQueryHandler : IRequestHandler<GetUserByIdQuery,GetUserB
         {
             throw new Exception();
         }
-        
+
         return user.Adapt<GetUserByIdResponse>();
     }
 }
