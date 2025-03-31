@@ -19,7 +19,7 @@ const ToastContext = React.createContext<{
 export function ToastProviderContext({ children }: { children: React.ReactNode }) {
     const [toasts, setToasts] = React.useState<Toast[]>([])
 
-    const toast = (toast: Toast) => {
+    const toast = (toast: Omit<Toast, "id">) => {
         setToasts((prev) => [...prev, { id: Date.now().toString(), ...toast }])
     }
 

@@ -23,30 +23,23 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
 import api from "@/lib/api"
-import apiNotify from "@/lib/api-notify"
+import { apiNotify } from "@/lib/api-notify"
 import Link from "next/link"
+import { useToastNotify } from "@/hooks/use-toast-notify";
 
 export function TaskTable({ tasks, onEdit, onDelete }) {
-    const { toast } = useToast()
     const [deleteId, setDeleteId] = useState(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const { toastNotify } = useToastNotify();
 
     const handleSubscribe = async (task) => {
         try {
             await apiNotify.post("/subscribe", task)
-            toast({
-                title: "Notification Subscribed",
-                description: "You will receive notifications for this task.",
-            })
+            toastNotify("Задача успешно создана!", "success");
         } catch (error) {
             console.error("Error subscribing to notifications:", error)
-            toast({
-                title: "Subscription Failed",
-                description: "Could not subscribe to notifications.",
-                variant: "destructive",
-            })
+            toastNotify("Произошла ошибка", "error")
         }
     }
 
@@ -56,18 +49,12 @@ export function TaskTable({ tasks, onEdit, onDelete }) {
         setIsDeleting(true)
         try {
             await api.delete(`/${deleteId}`)
-            toast({
-                title: "Task Deleted",
-                description: "The task has been successfully deleted.",
-            })
+            toastNotify("Task Deleted", "success")
             onDelete()
         } catch (error) {
             console.error("Error deleting task:", error)
-            toast({
-                title: "Deletion Failed",
-                description: "Could not delete the task.",
-                variant: "destructive",
-            })
+            toastNotify("Deletion Failed",
+                "Could not delete the task.")
         } finally {
             setIsDeleting(false)
             setDeleteId(null)
@@ -100,11 +87,11 @@ export function TaskTable({ tasks, onEdit, onDelete }) {
                             <TableRow key={task.id} className="group">
                                 <TableCell className="font-medium">{task.id}</TableCell>
                                 <TableCell>
-                                    <Link href={`/task/${task.id}`} className="hover:underline">
+                                    <Link href={`/task/${task.id}`} className="block max-w-[200px] truncate hover:underline">
                                         {task.name}
                                     </Link>
                                 </TableCell>
-                                <TableCell className="hidden max-w-[300px] truncate md:table-cell">
+                                <TableCell className="hidden max-w-[250px] truncate md:table-cell">
                                     {task.description || "No description"}
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">

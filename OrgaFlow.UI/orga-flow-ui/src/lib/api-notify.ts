@@ -1,9 +1,11 @@
-import { toast } from "@/components/ui/use-toast"
+import axios from "axios"
 
-export default function apiNotify(message: string, type: "success" | "error" = "success") {
-    toast({
-        title: type === "success" ? "Успешно" : "Ошибка",
-        description: message,
-        variant: type === "success" ? "default" : "destructive",
-    })
-}
+/**
+ * Axios instance для отправки запросов на сервер
+ */
+export const apiNotify = axios.create({
+    baseURL: "http://localhost:5023/api/notifications/",
+    withCredentials: true,
+})
+
+

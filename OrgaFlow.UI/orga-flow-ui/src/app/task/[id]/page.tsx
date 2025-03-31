@@ -91,8 +91,11 @@ export default function TaskDetail() {
             </div>
             <Card className="mx-auto max-w-2xl">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-2xl">{task.name}</CardTitle>
+                    <div className="flex flex-col items-start space-y-2">
+                        <CardTitle className="text-2xl break-all w-full max-w-full">
+                            {task.name}
+                        </CardTitle>
+
                         <Badge variant={task.completed ? "success" : "default"}>
                             {task.completed ? "Completed" : "In Progress"}
                         </Badge>
@@ -107,9 +110,9 @@ export default function TaskDetail() {
                 <CardContent className="space-y-4">
                     <div>
                         <h3 className="mb-2 font-medium">Description</h3>
-                        <p className="whitespace-pre-wrap text-muted-foreground">
+                        <div className="max-h-[300px] overflow-y-auto break-words whitespace-pre-wrap text-muted-foreground">
                             {task.description || "No description available"}
-                        </p>
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
@@ -120,6 +123,7 @@ export default function TaskDetail() {
                     <Button onClick={() => router.push(`/task/${id}/edit`)}>Edit Task</Button>
                 </CardFooter>
             </Card>
+
         </div>
     )
 }
