@@ -24,10 +24,7 @@ export default function ForgotPasswordPage() {
             setIsLoading(false)
             setIsSubmitted(true)
 
-            toast({
-                title: "Reset Link Sent",
-                description: "If your email exists in our system, you'll receive a password reset link.",
-            })
+            toast("Reset Link Sent", "If your email exists in our system, you'll receive a password reset link.")
         }, 1500)
     }
 

@@ -209,23 +209,36 @@ export default function CalendarPage() {
                             selected={date}
                             onSelect={setDate}
                             className="rounded-md border"
+                            showOutsideDays
                             components={{
-                                DayContent: (props) => (
-                                    <div className="flex flex-col items-center">
-                                        <div
-                                            className={cn(
-                                                props.day.getDate() === date?.getDate() &&
-                                                props.day.getMonth() === date?.getMonth() &&
-                                                "bg-primary text-primary-foreground rounded-full"
-                                            )}
-                                        >
-                                            {props.day.getDate()}
+                                DayContent: (props) => {
+                                    const day = props.day
+
+                                    if (!(day instanceof Date)) return <div /> // защита от пустых ячеек
+
+                                    const isSelected =
+                                        date &&
+                                        day.getDate() === date.getDate() &&
+                                        day.getMonth() === date.getMonth() &&
+                                        day.getFullYear() === date.getFullYear()
+
+                                    return (
+                                        <div className="flex flex-col items-center">
+                                            <div
+                                                className={cn(
+                                                    "w-6 h-6 flex items-center justify-center",
+                                                    isSelected && "bg-primary text-primary-foreground rounded-full"
+                                                )}
+                                            >
+                                                {day.getDate()}
+                                            </div>
+                                            {renderEventBadges(day)}
                                         </div>
-                                        {renderEventBadges(props.day)}
-                                    </div>
-                                ),
+                                    )
+                                },
                             }}
                         />
+
                     </CardContent>
                 </Card>
 

@@ -6,8 +6,12 @@ import "@/app/globals.css"
 import type { Metadata } from "next"
 import { ClientWrapper } from "@/components/client-wrapper"
 export const metadata: Metadata = {
-    title: "Task Management Dashboard",
+    title: "OrgaFlow",
     description: "Modern task management application",
+    icons: {
+        icon: "/icon",
+        apple: "/icon",
+    },
 }
 
 export default function RootLayout({
