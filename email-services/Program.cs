@@ -1,5 +1,6 @@
 using email_services.Services;
 using email_services.Services.Adapters;
+using email_services.Services.Adapters.Imap;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,11 @@ builder.Services.AddScoped<GmailEmailAdapter>();
 builder.Services.AddScoped<OutlookEmailAdapter>();
 
 builder.Services.AddScoped<IEmailSender, DispatcherEmailSender>();
+
+builder.Services.AddScoped<ImapMailReceiverAdapter>();
+builder.Services.AddScoped<ImapOutlookReceiverAdapter>();
+builder.Services.AddScoped<IEmailReceiver, DispatcherEmailReceiver>();
+
 
 
 builder.Services.AddControllers();
