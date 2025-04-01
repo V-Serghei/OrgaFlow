@@ -18,13 +18,18 @@ public class ImapOutlookReceiverAdapter : IEmailReceiver
         }
         catch (AuthenticationException ex)
         {
-            Console.WriteLine($"IMAP auth failed: {ex.Message}, trying POP3...");
-            return await TryPop3(auth);
+            Console.WriteLine($"IMAP auth failed: {ex.Message} → trying POP3...");
+            return await TryPop3Safe(auth);
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"IMAP connection failed: {ex.Message}, trying POP3...");
-            return await TryPop3(auth);
+            Console.WriteLine($"IMAP connection failed: {ex.Message} → trying POP3...");
+            return await TryPop3Safe(auth);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($" IMAP unexpected error: {ex.Message} → trying POP3...");
+            return await TryPop3Safe(auth);
         }
     }
 
@@ -52,6 +57,29 @@ public class ImapOutlookReceiverAdapter : IEmailReceiver
 
         await client.DisconnectAsync(true);
         return messages;
+    }
+
+    private async Task<List<EmailMessage>> TryPop3Safe(EmailAuthRequest auth)
+    {
+        try
+        {
+            return await TryPop3(auth);
+        }
+        catch (AuthenticationException ex)
+        {
+            Console.WriteLine($" POP3 auth failed: {ex.Message}");
+        }
+        catch (SocketException ex)
+        {
+            Console.WriteLine($" POP3 connection failed: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($" POP3 unexpected error: {ex.Message}");
+        }
+
+        // Вернуть пустой список, если не получилось через POP3
+        return new List<EmailMessage>();
     }
 
     private async Task<List<EmailMessage>> TryPop3(EmailAuthRequest auth)

@@ -1,14 +1,14 @@
 using email_services.Models;
 using MailKit.Net.Imap;
 using MailKit.Search;
+using MailKit.Security;
 using MailKit.Net.Pop3;
 using MimeKit;
-using MailKit.Security;
 using System.Net.Sockets;
 
 namespace email_services.Services.Adapters.Imap;
 
-public class ImapMailReceiverAdapter : IEmailReceiver
+public class ImapGmailReceiverAdapter : IEmailReceiver
 {
     public async Task<List<EmailMessage>> ReceiveEmailsAsync(EmailAuthRequest auth)
     {
@@ -18,17 +18,17 @@ public class ImapMailReceiverAdapter : IEmailReceiver
         }
         catch (AuthenticationException ex)
         {
-            Console.WriteLine($"TMAP auth failed (Mail.ru): {ex.Message} → trying POP3...");
+            Console.WriteLine($"IMAP auth failed (Gmail): {ex.Message} → trying POP3...");
             return await TryPop3Safe(auth);
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"IMAP connection failed (Mail.ru): {ex.Message} → trying POP3...");
+            Console.WriteLine($"IMAP connection failed (Gmail): {ex.Message} → trying POP3...");
             return await TryPop3Safe(auth);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"IMAP unexpected error (Mail.ru): {ex.Message} → trying POP3...");
+            Console.WriteLine($"IMAP unexpected error (Gmail): {ex.Message} → trying POP3...");
             return await TryPop3Safe(auth);
         }
     }
@@ -38,7 +38,7 @@ public class ImapMailReceiverAdapter : IEmailReceiver
         var messages = new List<EmailMessage>();
 
         using var client = new ImapClient();
-        await client.ConnectAsync("imap.mail.ru", 993, SecureSocketOptions.SslOnConnect);
+        await client.ConnectAsync("imap.gmail.com", 993, SecureSocketOptions.SslOnConnect);
         await client.AuthenticateAsync(auth.Username, auth.Password);
         await client.Inbox.OpenAsync(MailKit.FolderAccess.ReadOnly);
 
@@ -67,15 +67,15 @@ public class ImapMailReceiverAdapter : IEmailReceiver
         }
         catch (AuthenticationException ex)
         {
-            Console.WriteLine($"POP3 auth failed (Mail.ru): {ex.Message}");
+            Console.WriteLine($"POP3 auth failed (Gmail): {ex.Message}");
         }
         catch (SocketException ex)
         {
-            Console.WriteLine($"POP3 connection failed (Mail.ru): {ex.Message}");
+            Console.WriteLine($"POP3 connection failed (Gmail): {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"POP3 unexpected error (Mail.ru): {ex.Message}");
+            Console.WriteLine($"POP3 unexpected error (Gmail): {ex.Message}");
         }
 
         return new List<EmailMessage>();
@@ -86,7 +86,7 @@ public class ImapMailReceiverAdapter : IEmailReceiver
         var messages = new List<EmailMessage>();
 
         using var client = new Pop3Client();
-        await client.ConnectAsync("pop.mail.ru", 995, SecureSocketOptions.SslOnConnect);
+        await client.ConnectAsync("pop.gmail.com", 995, SecureSocketOptions.SslOnConnect);
         await client.AuthenticateAsync(auth.Username, auth.Password);
 
         int messageCount = client.Count;

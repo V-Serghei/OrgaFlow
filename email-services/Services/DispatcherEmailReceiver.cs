@@ -10,12 +10,14 @@ public class DispatcherEmailReceiver : IEmailReceiver
 
     public DispatcherEmailReceiver(
         ImapMailReceiverAdapter mail,
-        ImapOutlookReceiverAdapter outlook)
+        ImapOutlookReceiverAdapter outlook,
+        ImapGmailReceiverAdapter gmail)
     {
         _receivers = new Dictionary<string, IEmailReceiver>(StringComparer.OrdinalIgnoreCase)
         {
             { "mail", mail },
-            { "outlook", outlook }
+            { "outlook", outlook },
+            { "gmail", gmail },
         };
     }
 

@@ -12,6 +12,7 @@ builder.Services.AddScoped<IEmailSender, DispatcherEmailSender>();
 
 builder.Services.AddScoped<ImapMailReceiverAdapter>();
 builder.Services.AddScoped<ImapOutlookReceiverAdapter>();
+builder.Services.AddScoped<ImapGmailReceiverAdapter>();
 builder.Services.AddScoped<IEmailReceiver, DispatcherEmailReceiver>();
 
 
