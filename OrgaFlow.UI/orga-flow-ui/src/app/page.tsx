@@ -68,7 +68,7 @@ export default function Home() {
     <CardTitle className="text-sm font-medium">In Progress</CardTitle>
     </CardHeader>
     <CardContent>
-    <div className="text-2xl font-bold">{tasks.filter((task) => !task.completed).length}</div>
+    <div className="text-2xl font-bold">{tasks.filter((task) => !task.status).length}</div>
         <p className="text-xs text-muted-foreground">-1 since last week</p>
     </CardContent>
     </Card>
@@ -77,7 +77,7 @@ export default function Home() {
     <CardTitle className="text-sm font-medium">Completed</CardTitle>
     </CardHeader>
     <CardContent>
-    <div className="text-2xl font-bold">{tasks.filter((task) => task.completed).length}</div>
+    <div className="text-2xl font-bold">{tasks.filter((task) => task.status).length}</div>
         <p className="text-xs text-muted-foreground">+3 since last week</p>
     </CardContent>
     </Card>

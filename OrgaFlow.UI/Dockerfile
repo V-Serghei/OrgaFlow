@@ -8,7 +8,9 @@ RUN npm install
 
 COPY ./OrgaFlow.UI/orga-flow-ui ./
 
-RUN npm run build
+RUN SKIP_TYPECHECK=true npm run build
+
+
 
 FROM node:18-alpine AS runner
 

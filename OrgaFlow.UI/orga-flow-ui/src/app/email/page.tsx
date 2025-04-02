@@ -23,9 +23,9 @@ export default function Page() {
     const [error, setError] = useState<string | null>(null);
 
     const [authDetails, setAuthDetails] = useState({
-        provider: "mail",
-        username: "vistovskii2002@mail.ru",
-        password: "",
+        provider: "gmail",
+        username: "vistovschiiserghei@gmail.com",
+        password: "wvik gtpm hjsv ybfe",
     });
 
     useEffect(() => {
