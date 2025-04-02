@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OrgaFlow.Application;
+using OrgaFlow.Infrastructure.Proxy;
 using OrgaFlow.Persistence.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,6 +60,8 @@ builder.Services.AddHttpClient("EmailService",
         };
         return handler;
     });
+
+builder.Services.AddHttpClient<EmailProxyService>();
 
 
 // Register essential MVC components like controllers
