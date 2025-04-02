@@ -1,109 +1,145 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Archive, Star, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge"; 
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"; 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; 
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; 
+import { EmailDetailModal } from "@/components/email/email-detail-modal";
+import { ReplyModal } from "@/components/email/reply-modal";
+import type { EmailMessage } from "@/types/EmailMessage";
+import { apiMail } from "@/lib/api-mail";
+import { Archive, Star, Trash2 } from "lucide-react"; 
 
-// Mock email data
-const emails = [
-    {
-        id: 1,
-        from: "John Doe",
-        email: "john@example.com",
-        subject: "Project Update",
-        preview: "Hi, I wanted to share the latest updates on our project...",
-        date: "10:30 AM",
-        read: false,
-        starred: true,
-    },
-    {
-        id: 2,
-        from: "Sarah Johnson",
-        email: "sarah@example.com",
-        subject: "Meeting Tomorrow",
-        preview: "Just a reminder about our meeting scheduled for tomorrow at 2 PM...",
-        date: "Yesterday",
-        read: true,
-        starred: false,
-    },
-    {
-        id: 3,
-        from: "Alex Williams",
-        email: "alex@example.com",
-        subject: "Task Assignment",
-        preview: "I've assigned you a new task in our project management system...",
-        date: "Mar 28",
-        read: true,
-        starred: false,
-    },
-    {
-        id: 4,
-        from: "Emily Davis",
-        email: "emily@example.com",
-        subject: "Question about the report",
-        preview: "I was reviewing the quarterly report and had a question about...",
-        date: "Mar 27",
-        read: false,
-        starred: false,
-    },
-    {
-        id: 5,
-        from: "Michael Brown",
-        email: "michael@example.com",
-        subject: "Vacation Request",
-        preview: "I'd like to request vacation days from April 15 to April 22...",
-        date: "Mar 25",
-        read: true,
-        starred: true,
-    },
-]
+export default function Page() {
+    const [emails, setEmails] = useState<EmailMessage[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+    const [viewingEmail, setViewingEmail] = useState<EmailMessage | null>(null);
+    const [replyingToEmail, setReplyingToEmail] = useState<EmailMessage | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-export default function EmailPage() {
-    const [searchTerm, setSearchTerm] = useState("")
-    const [selectedEmails, setSelectedEmails] = useState([])
+    const [authDetails, setAuthDetails] = useState({
+        provider: "mail",
+        username: "vistovskii2002@mail.ru",
+        password: "",
+    });
 
-    const filteredEmails = emails.filter(
-        (email) =>
-            email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            email.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            email.preview.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
+    useEffect(() => {
+        const fetchEmails = async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const res = await apiMail.post("inbox", authDetails);
+                setEmails(res.data);
+            } catch (err) {
+                console.error("Ошибка при получении писем", err);
+                setError("Не удалось загрузить письма.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchEmails();
+    }, [authDetails]);
 
-    const toggleEmailSelection = (id) => {
-        if (selectedEmails.includes(id)) {
-            setSelectedEmails(selectedEmails.filter((emailId) => emailId !== id))
-        } else {
-            setSelectedEmails([...selectedEmails, id])
+    // Реализована фильтрация
+    const filteredEmails = emails.filter((email) => {
+        const subject = email.subject?.toLowerCase() || "";
+        const from = email.from?.toLowerCase() || "";
+        const preview = email.bodyPreview?.toLowerCase() || "";
+        const search = searchTerm.toLowerCase().trim();
+        if (!search) return true;
+        return subject.includes(search) || from.includes(search) || preview.includes(search);
+    });
+
+    const toggleEmailSelection = (uid: string) => {
+        setSelectedEmails((prev) =>
+            prev.includes(uid) ? prev.filter((eUid) => eUid !== uid) : [...prev, uid]
+        );
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedEmails.length === 0) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            await apiMail.post("trash", { auth: authDetails, uids: selectedEmails });
+            setEmails((prevEmails) => prevEmails.filter((email) => !selectedEmails.includes(email.uid)));
+            setSelectedEmails([]);
+        } catch (err) {
+            console.error("Ошибка при удалении писем", err);
+            setError("Не удалось удалить письма.");
+        } finally {
+            setIsLoading(false);
         }
+    };
+
+    const handleOpenEmail = async (emailUid: string) => {
+        setIsLoading(true);
+        setError(null);
+        setViewingEmail(null);
+        try {
+            const response = await apiMail.post(`messageDetails`, { auth: authDetails, uid: emailUid });
+            setViewingEmail(response.data);
+            setEmails(prev => prev.map(e => e.uid === emailUid ? {...e, read: true} : e));
+        } catch (err) {
+            console.error("Ошибка при загрузке деталей письма", err);
+            setError("Не удалось загрузить детали письма.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCloseDetailModal = () => setViewingEmail(null);
+    const handleOpenReplyModal = (email: EmailMessage) => {
+        setViewingEmail(null);
+        setReplyingToEmail(email);
     }
+    const handleCloseReplyModal = () => setReplyingToEmail(null);
+
+    const handleSendReply = async (replyData: { to: string; subject: string; body: string }) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            await apiMail.post("send", {
+                auth: authDetails,
+                to: replyData.to,
+                subject: replyData.subject,
+                body: replyData.body,
+            });
+            setReplyingToEmail(null);
+        } catch (err) {
+            console.error("Ошибка при отправке ответа", err);
+            setError("Не удалось отправить ответ.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Email</h2>
-                <p className="text-muted-foreground">Manage your messages and communications</p>
-            </div>
+
+            {error && <div className="p-2 text-red-600 border border-red-600 rounded">{error}</div>}
 
             <div className="flex items-center gap-2">
                 <Input
                     placeholder="Search emails..."
-                    className="max-w-sm"
+                    className="max-w-sm" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 {selectedEmails.length > 0 && (
                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
-                            <Archive className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" title="Archive">
+                            <Archive className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" title="Delete" onClick={handleDeleteSelected} disabled={isLoading}>
+                            <Trash2 className="w-4 h-4" />
                         </Button>
+                        {isLoading && <span className="text-xs">Processing...</span>}
                     </div>
                 )}
             </div>
@@ -111,136 +147,83 @@ export default function EmailPage() {
             <Tabs defaultValue="inbox" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="inbox">Inbox</TabsTrigger>
-                    <TabsTrigger value="starred">Starred</TabsTrigger>
-                    <TabsTrigger value="sent">Sent</TabsTrigger>
-                    <TabsTrigger value="drafts">Drafts</TabsTrigger>
                 </TabsList>
+
                 <TabsContent value="inbox" className="space-y-4">
                     <Card>
                         <CardHeader>
                             <CardTitle>Inbox</CardTitle>
-                            <CardDescription>You have {emails.filter((e) => !e.read).length} unread messages</CardDescription>
+                            <CardDescription>
+                                You have {emails.filter(e => !e.read).length} unread messages.
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            {isLoading && emails.length === 0 && <div className="text-center p-4">Loading emails...</div>}
+                            {!isLoading && filteredEmails.length === 0 && <div className="text-center p-4 text-muted-foreground">No emails found.</div>}
                             <div className="space-y-1">
                                 {filteredEmails.map((email) => (
                                     <div
-                                        key={email.id}
-                                        className={`flex items-center gap-2 rounded-md p-2 hover:bg-muted ${!email.read ? "bg-muted/50" : ""}`}
-                                        onClick={() => toggleEmailSelection(email.id)}
+                                        key={email.uid}
+                                        className={`flex items-start gap-3 p-2 rounded-md cursor-pointer hover:bg-muted ${!email.read ? "bg-muted/50 font-semibold" : ""} ${selectedEmails.includes(email.uid) ? "ring-2 ring-blue-500 ring-offset-1" : ""}`} // Улучшил выделение
+                                        onClick={() => handleOpenEmail(email.uid)}
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={selectedEmails.includes(email.id)}
-                                            onChange={() => {}}
-                                            className="h-4 w-4"
+                                            checked={selectedEmails.includes(email.uid)}
+                                            onChange={() => toggleEmailSelection(email.uid)}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="w-4 h-4 mt-1"
                                         />
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-6 w-6"
+                                            className="w-6 h-6 shrink-0" 
                                             onClick={(e) => {
-                                                e.stopPropagation()
-                                                // Toggle star logic would go here
+                                                e.stopPropagation();
+                                                console.log("Toggle star for:", email.uid);
+                                                // TODO: Toggle star logic + API call
                                             }}
                                         >
-                                            <Star className={`h-4 w-4 ${email.starred ? "fill-yellow-400 text-yellow-400" : ""}`} />
+                                            <Star className={`h-4 w-4 ${email.starred ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`} />
                                         </Button>
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={`/placeholder.svg?text=${email.from.charAt(0)}`} />
-                                            <AvatarFallback>{email.from.charAt(0)}</AvatarFallback>
+                                        <Avatar className="w-8 h-8">
+                                            <AvatarImage src={`/placeholder.svg?text=${email.from?.charAt(0)}`} alt={email.from ?? 'Sender'} />
+                                            <AvatarFallback>{email.from?.charAt(0).toUpperCase() ?? '?'}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
                                                 <p className={`truncate font-medium ${!email.read ? "font-semibold" : ""}`}>{email.from}</p>
-                                                <span className="text-xs text-muted-foreground">{email.date}</span>
+                                                <span className="text-xs text-muted-foreground whitespace-nowrap pl-2">{new Date(email.date).toLocaleString()}</span>
                                             </div>
-                                            <p className="truncate text-sm">{email.subject}</p>
-                                            <p className="truncate text-xs text-muted-foreground">{email.preview}</p>
+                                            <p className="text-sm truncate">{email.subject}</p>
+                                            <p className="text-xs truncate text-muted-foreground">{email.bodyPreview}</p>
                                         </div>
-                                        {!email.read && <Badge variant="secondary" className="ml-2 h-2 w-2 rounded-full p-0" />}
+                                        {!email.read && <Badge variant="secondary" className="w-2 h-2 p-0 mt-1 rounded-full shrink-0" />}
                                     </div>
                                 ))}
-
-                                {filteredEmails.length === 0 && (
-                                    <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-                                        <p className="text-sm text-muted-foreground">No emails found</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="starred">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Starred</CardTitle>
-                            <CardDescription>Your important messages</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-1">
-                                {filteredEmails
-                                    .filter((email) => email.starred)
-                                    .map((email) => (
-                                        <div
-                                            key={email.id}
-                                            className={`flex items-center gap-2 rounded-md p-2 hover:bg-muted ${!email.read ? "bg-muted/50" : ""}`}
-                                        >
-                                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                            </Button>
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={`/placeholder.svg?text=${email.from.charAt(0)}`} />
-                                                <AvatarFallback>{email.from.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between">
-                                                    <p className={`truncate font-medium ${!email.read ? "font-semibold" : ""}`}>{email.from}</p>
-                                                    <span className="text-xs text-muted-foreground">{email.date}</span>
-                                                </div>
-                                                <p className="truncate text-sm">{email.subject}</p>
-                                                <p className="truncate text-xs text-muted-foreground">{email.preview}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                {filteredEmails.filter((email) => email.starred).length === 0 && (
-                                    <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-                                        <p className="text-sm text-muted-foreground">No starred emails</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="sent">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Sent</CardTitle>
-                            <CardDescription>Messages you've sent</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-                                <p className="text-sm text-muted-foreground">No sent emails to display</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="drafts">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Drafts</CardTitle>
-                            <CardDescription>Your saved drafts</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex h-32 items-center justify-center rounded-md border border-dashed">
-                                <p className="text-sm text-muted-foreground">No drafts to display</p>
                             </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
-        </div>
-    )
-}
 
+            {viewingEmail && (
+                <EmailDetailModal
+                    email={viewingEmail} 
+                    onClose={handleCloseDetailModal}
+                    onReply={handleOpenReplyModal}
+                    isLoading={isLoading}
+                />
+            )}
+
+            {replyingToEmail && (
+                <ReplyModal
+                    originalEmail={replyingToEmail} 
+                    onClose={handleCloseReplyModal}
+                    onSend={handleSendReply}
+                    isLoading={isLoading}
+                />
+            )}
+        </div> 
+    ); 
+} 

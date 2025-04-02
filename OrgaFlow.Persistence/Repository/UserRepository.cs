@@ -16,7 +16,7 @@ public class UserRepository : IDbRepository
     {
         _context = context;
     }
-
+    
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
         return await _context.Users.FindAsync(id, cancellationToken);
