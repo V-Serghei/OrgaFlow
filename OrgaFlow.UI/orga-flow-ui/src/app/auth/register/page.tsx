@@ -7,9 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-
+import { useToast } from "@/hooks/use-toast";
 export default function RegisterPage() {
     const router = useRouter()
     const { toast } = useToast()
@@ -29,6 +28,7 @@ export default function RegisterPage() {
 
         if (formData.password !== formData.confirmPassword) {
             toast({
+                id: Date.now().toString(),
                 title: "Passwords don't match",
                 description: "Please make sure your passwords match.",
                 variant: "destructive",
@@ -38,6 +38,7 @@ export default function RegisterPage() {
 
         if (!formData.agreeTerms) {
             toast({
+                id: Date.now().toString(),
                 title: "Terms Agreement Required",
                 description: "Please agree to the terms and conditions.",
                 variant: "destructive",
@@ -52,6 +53,7 @@ export default function RegisterPage() {
             setIsLoading(false)
 
             toast({
+                id: Date.now().toString(),
                 title: "Registration Successful",
                 description: "Your account has been created successfully.",
             })
