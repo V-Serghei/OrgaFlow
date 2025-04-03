@@ -10,8 +10,6 @@ COPY ./OrgaFlow.UI/orga-flow-ui ./
 
 RUN SKIP_TYPECHECK=true npm run build
 
-
-
 FROM node:18-alpine AS runner
 
 WORKDIR /app

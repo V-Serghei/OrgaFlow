@@ -25,7 +25,7 @@ export default function Page() {
     const [authDetails, setAuthDetails] = useState({
         provider: "gmail",
         username: "vistovschiiserghei@gmail.com",
-        password: "wvik gtpm hjsv ybfe",
+        password: "",
     });
 
     useEffect(() => {
@@ -109,6 +109,7 @@ export default function Page() {
                 to: replyData.to,
                 subject: replyData.subject,
                 body: replyData.body,
+                provider: "gmail"
             });
             setReplyingToEmail(null);
         } catch (err) {

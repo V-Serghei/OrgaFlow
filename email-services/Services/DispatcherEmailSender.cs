@@ -22,7 +22,7 @@ public class DispatcherEmailSender : IEmailSender
 
     public async Task SendEmailAsync(EmailRequest request)
     {
-        var key = request.Provider?.ToLower() ?? "smtp";
+        var key = request.Provider?.ToLower() ?? "gmail";
 
         if (!_providers.ContainsKey(key))
             throw new ArgumentException($"Unknown email provider: {key}");

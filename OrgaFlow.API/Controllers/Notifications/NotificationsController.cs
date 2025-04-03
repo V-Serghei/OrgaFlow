@@ -24,18 +24,16 @@ namespace OrgaFlow.Application.Controllers.Notifications
             {
                 var client = _httpClientFactory.CreateClient("EmailService");
 
-                // Подготовка данных
                 var emailRequest = new
                 {
                     To = "vistovschiiserghei@gmail.com",
                     Subject = $"Уведомление о задаче: {taskDto.Name}",
-                    Body = $"Задача '{taskDto.Name}' требует выполнения!\nОписание: {taskDto.Description}\nНачало: {taskDto.StartDate}\nКонец: {taskDto.EndDate}"
+                    Body = $"Задача '{taskDto.Name}' требует выполнения!\nОписание: {taskDto.Description}\nНачало: {taskDto.StartDate}\nКонец: {taskDto.EndDate}",
+                    Provider = "gmail"
                 };
 
-                // Логирование перед отправкой
                 Console.WriteLine($"Отправка уведомления: {JsonSerializer.Serialize(emailRequest)}");
 
-                // Отправка запроса в Email-сервис
                 var response = await client.PostAsJsonAsync("send", emailRequest);
 
                 if (response.IsSuccessStatusCode)
