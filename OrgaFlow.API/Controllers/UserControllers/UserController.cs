@@ -2,6 +2,7 @@
 using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using OrgaFlow.Application.Commands.User;
 using OrgaFlow.Application.Commands.User.UserCreate;
 using OrgaFlow.Application.Commands.User.UserDelete;
 using OrgaFlow.Application.Commands.User.UserUpdate;
@@ -11,6 +12,7 @@ using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.DTO.Request;
 using OrgaFlow.Contracts.Models;
 using OrgaFlow.Contracts.Requests;
+using OrgaFlow.Contracts.Requests.User;
 using OrgaFlow.Domain.Entities;
 
 namespace OrgaFlow.Application.Controllers.UserControllers;
@@ -43,7 +45,7 @@ public class UserController : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<IActionResult> CreateUser([FromBody] UserModelView user)
+    public async Task<IActionResult> CreateUser([FromBody] UserRegisterRequest user)
     {
         var response = await _mediator.Send(new CreateUserCommand(user.Adapt<UserCreateRequest>()));
 
@@ -68,6 +70,8 @@ public class UserController : ControllerBase
         }
 
         var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+        
+        //TODO:Оставить только в логинации. 
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
@@ -77,6 +81,48 @@ public class UserController : ControllerBase
         };
         Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
 
+        return Ok(new
+        {
+            User = response,
+            Token = authResult.Token
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] UserLoginRequest user)
+    {
+        var response = await _mediator.Send(new LoginUserCommand(user.Adapt<UserLoginRequest>()));
+
+        if (response == null && response?.User == null)
+        {
+            return Unauthorized("Invalid credentials.");
+        }
+
+        var httpClient = _httpClientFactory.CreateClient("AuthService");
+
+        var tokenRequest = new
+        {
+            UserId = response?.User?.Id,
+            UserName = response?.User?.UserName
+        };
+//TODO: Добавить проверку на существование токена, в случае логина после регистрации
+        var authResponse = await httpClient.PostAsJsonAsync("create-token", tokenRequest);
+
+        if (!authResponse.IsSuccessStatusCode)
+        {
+            return BadRequest("Error creating token.");
+        }
+
+        var authResult = await authResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(30),
+        };
+        Response.Cookies.Append("AuthToken", authResult.Token, cookieOptions);
         return Ok(new
         {
             User = response,

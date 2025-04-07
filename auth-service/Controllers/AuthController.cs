@@ -29,7 +29,7 @@ namespace auth_service.Controllers
             if (loginRequest.UserId == "1" && loginRequest.UserName == "1")
             {
                 var userId = Guid.NewGuid().ToString();
-                var token = _tokenService.GenerateToken(loginRequest.UserId, loginRequest.UserName);
+                var token = _tokenService.GenerateToken(loginRequest.UserId, loginRequest.UserName, "User");
 
                 var session = new AuthDbSession
                 {
@@ -59,7 +59,7 @@ namespace auth_service.Controllers
         [HttpPost("create-token")]
         public async Task<IActionResult> CreateToken([FromBody] CreateTokenRequestDto request)
         {
-            var token = _tokenService.GenerateToken(request.UserId, request.UserName);
+            var token = _tokenService.GenerateToken(request.UserId, request.UserName, "User");
 
             var session = new AuthDbSession
             {
@@ -119,7 +119,7 @@ namespace auth_service.Controllers
             if (session == null)
                 return Unauthorized("Token is invalid.");
 
-            var newToken = _tokenService.GenerateToken(request.UserId, request.UserName);
+            var newToken = _tokenService.GenerateToken(request.UserId, request.UserName, "User");
 
             session.Token = newToken;
             session.Expiration = DateTime.UtcNow.AddMinutes(60);
@@ -134,6 +134,8 @@ namespace auth_service.Controllers
                 Message = "Token updated successfully"
             });
         }
+        
+        
 
 
         // DELETE: api/auth/session/{sessionId}

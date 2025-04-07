@@ -1,0 +1,44 @@
+using Mapster;
+using MediatR;
+using OrgaFlow.Contracts.Responses;
+using OrgaFlow.Domain.Interfaces;
+
+namespace OrgaFlow.Application.Commands.User;
+
+public class LoginUserCommandHandler: IRequestHandler <LoginUserCommand, UserLoginResponse>
+{
+    private readonly IDbRepository _userRepository;
+    
+    public LoginUserCommandHandler(IDbRepository userRepository)
+    {
+        _userRepository = userRepository;
+    }
+    
+    public async Task<UserLoginResponse> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+    {
+        if (request.UserData.Email != string.Empty)
+        {
+            var user = await _userRepository.GetByEmailAndPasswordAsync(request.UserData.Email, request.UserData.Password, cancellationToken);
+            if (user != null)
+            {
+                return user.Adapt<UserLoginResponse>();
+            }
+        }
+        else
+        {
+            var user = await _userRepository.GetByUserNameAndPasswordAsync(request.UserData.Username, request.UserData.Password, cancellationToken);
+            if (user != null)
+            {
+                return user.Adapt<UserLoginResponse>();
+            }
+        }
+
+        return new UserLoginResponse
+        {
+            Message = "Invalid credentials",
+            IsSuccess = false,
+            User = null
+        };
+
+    }
+}

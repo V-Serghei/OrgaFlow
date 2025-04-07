@@ -22,6 +22,16 @@ public class UserRepository : IDbRepository
         return await _context.Users.FindAsync(id, cancellationToken);
     }
 
+    public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    {
+        return await _context.Users.FirstOrDefaultAsync(e=>e.Email == email && e.PasswordHash == password, cancellationToken);
+    }
+
+    public async Task<User?> GetByUserNameAndPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    {
+        return await _context.Users.FindAsync(email, password, cancellationToken);
+    }
+
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
     {
         return await _context.Users.ToListAsync(cancellationToken);

@@ -7,9 +7,9 @@ namespace auth_service.Services
 {
     public class TokenService
     {
-        private readonly string _secret;
-        private readonly string _issuer;
-        private readonly string _audience;
+        private readonly string? _secret;
+        private readonly string? _issuer;
+        private readonly string? _audience;
 
         public TokenService(IConfiguration configuration)
         {
@@ -18,7 +18,7 @@ namespace auth_service.Services
             _audience = configuration["Jwt:Audience"];
         }
 
-        public string GenerateToken(string userId, string username, int expireMinutes = 60)
+        public string GenerateToken(string userId, string username,string role, int expireMinutes = 60)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -27,6 +27,7 @@ namespace auth_service.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
                 new Claim(JwtRegisteredClaimNames.UniqueName, username),
+                new Claim(ClaimTypes.Role, role),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
