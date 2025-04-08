@@ -18,12 +18,19 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserU
 
     public async Task<UserUpdateResponse> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
-        var resp = await _userRepository.UpdateAsync(request.UserUpdate.Adapt<Domain.Entities.User>(),
-            CancellationToken.None);
-        if (resp.Item1)
+        try
         {
-            return new UserUpdateResponse(resp.Item2, resp.Item1, resp.Item3);
+            var resp = await _userRepository.UpdateAsync(request.UserUpdate.Adapt<Domain.Entities.User>(),
+                CancellationToken.None);
+            if (resp != null)
+            {
+                return new UserUpdateResponse(resp.Adapt<UserDto>(), "User updated successfully", true);
+            }
+            else return new UserUpdateResponse(null, "User not found", false);
         }
-        else return new UserUpdateResponse(resp.Item2, resp.Item1, resp.Item3);
+        catch (Exception e)
+        {
+            return new UserUpdateResponse(null, e.Message, false);
+        }
     }
 }

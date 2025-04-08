@@ -1,9 +1,15 @@
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using OrgaFlow.Application;
+using OrgaFlow.Application.Controllers.Facade;
+using OrgaFlow.Application.Proxy.Interfaces;
+using OrgaFlow.Application.Proxy.ServiceProxy;
+using OrgaFlow.Application.Proxy.Services;
 using OrgaFlow.Infrastructure.Proxy;
 using OrgaFlow.Persistence.Configuration;
 
@@ -38,16 +44,23 @@ builder.Services
     {
         ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
     });
+
+// Register custom message handler for authentication token
+builder.Services.AddTransient<AuthTokenHandler>();
+
 builder.Services.AddHttpClient("TaskService",
-        client => { client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]); })
+        client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]);
+        })
+    .AddHttpMessageHandler<AuthTokenHandler>()
     .ConfigurePrimaryHttpMessageHandler(() =>
     {
-        var handler = new HttpClientHandler
+        return new HttpClientHandler
         {
-            UseCookies = true, // Включаем поддержку куков
+            UseCookies = true,
             CookieContainer = new System.Net.CookieContainer()
         };
-        return handler;
     });
 builder.Services.AddHttpClient("EmailService",
         client => { client.BaseAddress = new Uri(builder.Configuration["EmailService:BaseUrl"]); })
@@ -61,7 +74,34 @@ builder.Services.AddHttpClient("EmailService",
         return handler;
     });
 
-builder.Services.AddHttpClient<EmailProxyService>();
+// Register repositories and services
+builder.Services.AddScoped<IOrgaFlowFacade, OrgaFlowFacade>();
+
+
+//register proxy components
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<IUserService>(sp =>
+{
+    var realService = sp.GetRequiredService<UserService>();
+    var contextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+    return new UserServiceProxy(realService, contextAccessor);
+});
+builder.Services.AddScoped<TaskService>();
+builder.Services.AddScoped<ITaskService>(sp =>
+{
+    var real = sp.GetRequiredService<TaskService>();
+    var accessor = sp.GetRequiredService<IHttpContextAccessor>();
+    return new TaskServiceProxy(real, accessor);
+});
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<IEmailService>(sp =>
+{
+    var real = sp.GetRequiredService<EmailService>();
+    var accessor = sp.GetRequiredService<IHttpContextAccessor>();
+    return new EmailServiceProxy(real, accessor);
+});
 
 
 // Register essential MVC components like controllers
@@ -88,7 +128,27 @@ builder.Services.AddApplication();
 
 // Register generic HTTP client for internal use
 builder.Services.AddHttpClient();
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"])),
 
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // ===============================
@@ -112,6 +172,17 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 // Enable Authorization middleware
+app.Use(async (context, next) =>
+{
+    var token = context.Request.Cookies["AuthToken"];
+    if (!string.IsNullOrEmpty(token))
+    {
+        context.Request.Headers.Authorization = $"Bearer {token}";
+    }
+
+    await next();
+});
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Map controller routes

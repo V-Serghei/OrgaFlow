@@ -44,7 +44,7 @@ public class UserRepository : IDbRepository
         return user;
     }
 
-    public async Task<(bool, string, string)> UpdateAsync(User user, CancellationToken cancellationToken)
+    public async Task<User?> UpdateAsync(User user, CancellationToken cancellationToken)
     {
         try
         {
@@ -53,14 +53,14 @@ public class UserRepository : IDbRepository
             {
                 dbUser = user;
                 await _context.SaveChangesAsync(cancellationToken);
-                if (dbUser.UserName != null) return new(true, "Success", dbUser.UserName);
+                if (dbUser.UserName != null) return user;
             }
 
-            return new(false, "User not found", "");
+            throw new Exception("User not found");
         }
         catch (Exception e)
         {
-            return new(false, e.Message, "");
+            throw new Exception(e.Message);
         }
     }
 

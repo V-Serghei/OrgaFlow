@@ -3,6 +3,7 @@ using OrgaFlow.Contracts.DTO;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using OrgaFlow.Application.Controllers.Facade;
 
 namespace OrgaFlow.Application.Controllers.TaskController
 {
@@ -11,10 +12,12 @@ namespace OrgaFlow.Application.Controllers.TaskController
     public class TaskController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IOrgaFlowFacade _facade;
 
-        public TaskController(IHttpClientFactory httpClientFactory)
+        public TaskController(IHttpClientFactory httpClientFactory, IOrgaFlowFacade facade)
         {
             _httpClientFactory = httpClientFactory;
+            _facade = facade;
         }
 
         private HttpClient CreateClientWithAuthCookie()
@@ -31,86 +34,75 @@ namespace OrgaFlow.Application.Controllers.TaskController
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks()
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.GetAsync("");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var tasks = await response.Content.ReadFromJsonAsync<IEnumerable<TaskDto>>();
-                return Ok(tasks);
+                return Ok(await _facade.GetAllTasksAsync());
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
             }
 
-            return StatusCode((int)response.StatusCode);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TaskDto>> GetTaskById(int id)
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.GetAsync($"{id}");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var task = await response.Content.ReadFromJsonAsync<TaskDto>();
-                if (task == null) return NotFound();
-                return Ok(task);
+                return Ok(await _facade.GetTaskByIdAsync(id));
             }
-
-            return StatusCode((int)response.StatusCode);
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<TaskDto>> CreateTask([FromBody] TaskDto taskDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
+                return Ok(await _facade.CreateTaskAsync(taskDto));
             }
-
-            var client = CreateClientWithAuthCookie();
-            var response = await client.PostAsJsonAsync("", taskDto);
-            if (response.IsSuccessStatusCode)
+            catch (UnauthorizedAccessException ex)
             {
-                var createdTask = await response.Content.ReadFromJsonAsync<TaskDto>();
-                return CreatedAtAction(nameof(GetTaskById), new { id = taskDto.Id }, taskDto);
+                return Forbid(ex.Message);
             }
-
-            return StatusCode((int)response.StatusCode);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskDto taskDto)
         {
-            if (id == 0)
+            try
             {
-                return BadRequest("ID в пути и теле запроса не совпадают");
-            }
+                if (taskDto.Id != id)
+                {
+                    return BadRequest("Task ID mismatch.");
+                }
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            taskDto = taskDto with { Id = id };
-            var client = CreateClientWithAuthCookie();
-            var response = await client.PutAsJsonAsync($"{id}", taskDto);
-            if (response.IsSuccessStatusCode)
-            {
+                await _facade.UpdateTaskAsync(id, taskDto);
                 return NoContent();
             }
-
-            return StatusCode((int)response.StatusCode);
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.DeleteAsync($"{id}");
-            if (response.IsSuccessStatusCode)
+            try
             {
+                await _facade.DeleteTaskAsync(id);
                 return NoContent();
             }
-
-            return StatusCode((int)response.StatusCode);
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
     }
 }

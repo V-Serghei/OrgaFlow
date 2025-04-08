@@ -26,7 +26,7 @@ public class LoginUserCommandHandler: IRequestHandler <LoginUserCommand, UserLog
         }
         else
         {
-            var user = await _userRepository.GetByUserNameAndPasswordAsync(request.UserData.Username, request.UserData.Password, cancellationToken);
+            var user = await _userRepository.GetByUserNameAndPasswordAsync(request.UserData.UserName, request.UserData.Password, cancellationToken);
             if (user != null)
             {
                 return user.Adapt<UserLoginResponse>();

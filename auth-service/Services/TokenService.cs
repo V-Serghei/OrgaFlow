@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using auth_service.Domain.DTO;
 using Microsoft.IdentityModel.Tokens;
 
 namespace auth_service.Services
@@ -18,23 +19,25 @@ namespace auth_service.Services
             _audience = configuration["Jwt:Audience"];
         }
 
-        public string GenerateToken(string userId, string username,string role, int expireMinutes = 60)
+        public string GenerateToken(CreateTokenDto userDto)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId),
-                new Claim(JwtRegisteredClaimNames.UniqueName, username),
-                new Claim(ClaimTypes.Role, role),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Sub, userDto.UserId),
+                new Claim(JwtRegisteredClaimNames.UniqueName, userDto.Username),
+                new Claim(ClaimTypes.Role, userDto.Role),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.Name, userDto.Username),
+                new Claim(ClaimTypes.Email, userDto.Email),
             };
 
             var token = new JwtSecurityToken(
                 issuer: _issuer,
                 audience: _audience,
-                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
+                expires: DateTime.UtcNow.AddMinutes(userDto.ExpireMinutes),
                 claims: claims,
                 signingCredentials: credentials
             );
