@@ -19,7 +19,6 @@ public class MailController : ControllerBase
     [HttpPost("inbox")]
     public async Task<IActionResult> GetInbox([FromBody] EmailAuthVmRequest auth)
     {
-        ;
         return Ok(await _facade.GetInboxAsync(auth));
     }
 

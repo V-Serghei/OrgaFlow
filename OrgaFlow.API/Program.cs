@@ -1,12 +1,14 @@
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using OrgaFlow.Application;
 using OrgaFlow.Application.Controllers.Facade;
+using OrgaFlow.Application.Decorator;
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Application.Proxy.ServiceProxy;
 using OrgaFlow.Application.Proxy.Services;
@@ -81,6 +83,8 @@ builder.Services.AddScoped<IOrgaFlowFacade, OrgaFlowFacade>();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<UserService>();
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<IUserService>(sp =>
 {
     var realService = sp.GetRequiredService<UserService>();
@@ -90,10 +94,44 @@ builder.Services.AddScoped<IUserService>(sp =>
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<ITaskService>(sp =>
 {
+    // Получаем реальную базовую реализацию
+    ITaskService realService = sp.GetRequiredService<TaskService>();
+
+    // Получаем необходимые зависимости для декоратора
+    var memoryCache = sp.GetRequiredService<IMemoryCache>();
+
+    // Создаем декоратор, который оборачивает реальную реализацию
+    ITaskService decorated = new CachingTaskServiceDecorator(realService, memoryCache);
+
+    // Затем возвращаем декорированный сервис, но пока без Proxy
+    return decorated;
+});
+// Пере-регистрация ITaskService с прокси: можно перерегистрировать тот же интерфейс,
+builder.Services.Decorate<ITaskService, TaskServiceProxy>();
+builder.Services.AddScoped<ITaskService>(sp =>
+{
+    // Базовая реализация
+    ITaskService realService = sp.GetRequiredService<TaskService>();
+
+    // Декоратор для кэширования
+    var memoryCache = sp.GetRequiredService<IMemoryCache>();
+    ITaskService decorated = new CachingTaskServiceDecorator(realService, memoryCache);
+
+    // Прокси, который оборачивает декоратор
+    var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+    ITaskService proxied = new TaskServiceProxy(decorated, httpContextAccessor);
+
+    return proxied;
+});
+
+
+/*
+builder.Services.AddScoped<ITaskService>(sp =>
+{
     var real = sp.GetRequiredService<TaskService>();
     var accessor = sp.GetRequiredService<IHttpContextAccessor>();
     return new TaskServiceProxy(real, accessor);
-});
+});*/
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<IEmailService>(sp =>
 {
@@ -115,7 +153,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://192.168.55.51:3000")
+        policy.WithOrigins("http://localhost:3000")
             .AllowCredentials()
             .AllowAnyMethod()
             .AllowAnyHeader();
