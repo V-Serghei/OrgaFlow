@@ -1,4 +1,4 @@
-@OrgaFlow.Application_HostAddress = http://localhost:5023
+@OrgaFlow.Application_HostAddress = http://192.168.55.51:5023
 
 GET {{OrgaFlow.Application_HostAddress}}/weatherforecast/
 Accept: application/json

@@ -146,7 +146,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddDays(30)
         };
         response.Cookies.Append("AuthToken", tokenResult?.Token!, cookieOptions);
@@ -160,7 +160,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddDays(30),
         };
         response.Cookies.Append("AuthToken", token, cookieOptions);

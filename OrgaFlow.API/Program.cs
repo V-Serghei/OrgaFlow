@@ -10,7 +10,6 @@ using OrgaFlow.Application.Controllers.Facade;
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Application.Proxy.ServiceProxy;
 using OrgaFlow.Application.Proxy.Services;
-using OrgaFlow.Infrastructure.Proxy;
 using OrgaFlow.Persistence.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -116,7 +115,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://192.168.55.51:3000")
             .AllowCredentials()
             .AllowAnyMethod()
             .AllowAnyHeader();

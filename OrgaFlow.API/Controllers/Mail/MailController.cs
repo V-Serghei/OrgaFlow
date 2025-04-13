@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Contracts.Requests;
-using OrgaFlow.Infrastructure.Proxy;
 using System.Threading.Tasks;
 using OrgaFlow.Application.Controllers.Facade;
 
