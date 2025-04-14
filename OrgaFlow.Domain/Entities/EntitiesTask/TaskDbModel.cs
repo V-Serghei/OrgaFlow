@@ -9,5 +9,5 @@ public class TaskDbModel
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public bool Notify { get; set; }
-    
+  
 }
