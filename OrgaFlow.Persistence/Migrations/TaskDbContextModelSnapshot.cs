@@ -37,6 +37,9 @@ namespace OrgaFlow.Persistence.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("Importance")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -44,15 +47,32 @@ namespace OrgaFlow.Persistence.Migrations
                     b.Property<bool>("Notify")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("Status")
-                        .HasColumnType("boolean");
-
                     b.HasKey("Id");
 
+                    b.HasIndex("ParentId");
+
                     b.ToTable("TaskTable");
+                });
+
+            modelBuilder.Entity("OrgaFlow.Domain.Entities.EntitiesTask.TaskDbModel", b =>
+                {
+                    b.HasOne("OrgaFlow.Domain.Entities.EntitiesTask.TaskDbModel", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("OrgaFlow.Domain.Entities.EntitiesTask.TaskDbModel", b =>
+                {
+                    b.Navigation("Children");
                 });
 #pragma warning restore 612, 618
         }

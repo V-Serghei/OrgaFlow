@@ -4,15 +4,22 @@ using task_service.Repository;
 
 namespace task_service.Application.Tasks.Queries.Handlers;
 
-public class GetTaskByIdQueryHandler: IRequestHandler<GetTaskByIdQuery, ETask>
+public class GetTaskByIdQueryHandler : IRequestHandler<GetTaskByIdQuery, TaskDto>
 {
     private readonly TaskRepository _repository;
+
     public GetTaskByIdQueryHandler(TaskRepository repository)
     {
         _repository = repository;
     }
-    public async Task<ETask> Handle(GetTaskByIdQuery request, CancellationToken cancellationToken)
+
+    public async Task<TaskDto> Handle(GetTaskByIdQuery request, CancellationToken cancellationToken)
     {
-        return (await _repository.GetTaskById(request.Id, cancellationToken))!;
+        var taskDto = await _repository.GetTaskTreeDtoById(request.Id, cancellationToken);
+        if (taskDto == null)
+        {
+            throw new KeyNotFoundException($"Задача с ID {request.Id} не найдена.");
+        }
+        return taskDto;
     }
 }

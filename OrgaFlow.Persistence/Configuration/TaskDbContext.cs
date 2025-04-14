@@ -10,5 +10,19 @@ public class TaskDbContext: DbContext
     
     
     public DbSet<TaskDbModel> TaskTable { get; set; }
-    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<TaskDbModel>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasOne(e => e.Parent) 
+                .WithMany(p => p.Children) 
+                .HasForeignKey(e => e.ParentId) 
+                .IsRequired(false) 
+                .OnDelete(DeleteBehavior.Restrict); 
+        });
+    }
 }
