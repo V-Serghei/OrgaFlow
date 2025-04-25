@@ -19,7 +19,9 @@ public class UserRepository : IDbRepository
     
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
-        return await _context.Users.FindAsync(id, cancellationToken);
+        var user = await _context.Users.FindAsync(id, cancellationToken);
+        
+        return user;
     }
 
     public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken)

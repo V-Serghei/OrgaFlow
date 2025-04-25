@@ -1,11 +1,11 @@
 using Mapster;
-using MediatR;
+using OrgaFlow.Application.Mediator;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
 
 namespace OrgaFlow.Application.Commands.User;
 
-public class LoginUserCommandHandler: IRequestHandler <LoginUserCommand, UserLoginResponse>
+public class LoginUserCommandHandler: IURequestHandler <LoginUserCommand, UserLoginResponse>
 {
     private readonly IDbRepository _userRepository;
     
@@ -14,7 +14,7 @@ public class LoginUserCommandHandler: IRequestHandler <LoginUserCommand, UserLog
         _userRepository = userRepository;
     }
     
-    public async Task<UserLoginResponse> Handle(LoginUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserLoginResponse> HandleAsync(LoginUserCommand request, CancellationToken cancellationToken)
     {
         if (request.UserData.Email != string.Empty)
         {

@@ -1,12 +1,13 @@
 using Mapster;
 using MediatR;
+using OrgaFlow.Application.Mediator;
 using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
 
 namespace OrgaFlow.Application.Commands.User.UserUpdate;
 
-public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserUpdateResponse>
+public class UpdateUserCommandHandler : IURequestHandler<UpdateUserCommand, UserUpdateResponse>
 {
     private readonly IDbRepository _userRepository;
 
@@ -16,7 +17,7 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UserU
         _userRepository = userRepository;
     }
 
-    public async Task<UserUpdateResponse> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserUpdateResponse> HandleAsync(UpdateUserCommand request, CancellationToken cancellationToken)
     {
         try
         {

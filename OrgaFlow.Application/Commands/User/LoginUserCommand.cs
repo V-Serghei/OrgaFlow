@@ -1,4 +1,3 @@
-using MediatR;
 using OrgaFlow.Contracts.Requests.User;
 using OrgaFlow.Contracts.Responses;
 
