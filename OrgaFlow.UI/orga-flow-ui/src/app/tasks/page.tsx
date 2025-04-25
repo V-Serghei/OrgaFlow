@@ -38,35 +38,94 @@ export default function TasksPage() {
         fetchTasks()
     }, [])
 
-    useEffect(() => {
-        // Filter and sort tasks
-        let result = [...tasks]
+    // Рекурсивная функция для подсчета всех задач (включая вложенные)
+    const countAllTasks = (taskList) => {
+        let count = taskList.length
 
-        // Apply search filter
-        if (searchTerm) {
-            result = result.filter(
-                (task) =>
-                    task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
-            )
-        }
+        taskList.forEach(task => {
+            if (task.children && task.children.length > 0) {
+                count += countAllTasks(task.children)
+            }
+        })
 
-        // Apply status filter
-        if (statusFilter !== "all") {
-            result = result.filter((task) => {
-                if (statusFilter === "completed") return task.completed
-                if (statusFilter === "active") return !task.completed
-                return true
+        return count
+    }
+
+    // Рекурсивная функция для подсчета завершенных задач
+    const countCompletedTasks = (taskList) => {
+        let count = taskList.filter(task => task.status === 1).length
+
+        taskList.forEach(task => {
+            if (task.children && task.children.length > 0) {
+                count += countCompletedTasks(task.children)
+            }
+        })
+
+        return count
+    }
+
+    // Проверка, соответствует ли задача поисковому запросу
+    const taskMatchesSearch = (task, term) => {
+        if (!term) return true
+
+        const lowercaseTerm = term.toLowerCase()
+
+        return (
+            task.name.toLowerCase().includes(lowercaseTerm) ||
+            (task.description && task.description.toLowerCase().includes(lowercaseTerm))
+        )
+    }
+
+    // Проверка, соответствует ли задача фильтру статуса
+    const taskMatchesStatusFilter = (task, filter) => {
+        if (filter === "all") return true
+        if (filter === "completed") return task.status === 1
+        if (filter === "active") return task.status === 0
+        return true
+    }
+
+    // Рекурсивная функция для фильтрации с сохранением структуры дерева
+    const filterTasksRecursively = (taskList, searchTerm, statusFilter) => {
+        return taskList
+            .map(task => {
+                // Проверка на совпадение для текущей задачи
+                const currentTaskMatches =
+                    taskMatchesSearch(task, searchTerm) &&
+                    taskMatchesStatusFilter(task, statusFilter)
+
+                // Если у задачи есть дочерние элементы, фильтруем их рекурсивно
+                let filteredChildren = []
+                if (task.children && task.children.length > 0) {
+                    filteredChildren = filterTasksRecursively(
+                        task.children,
+                        searchTerm,
+                        statusFilter
+                    )
+                }
+
+                // Включаем задачу, если она совпадает с критериями поиска
+                // ИЛИ если у неё есть подходящие дочерние задачи
+                if (currentTaskMatches || filteredChildren.length > 0) {
+                    return {
+                        ...task,
+                        children: filteredChildren
+                    }
+                }
+
+                // Задача не подходит по критериям фильтрации
+                return null
             })
-        }
+            .filter(Boolean) // Удаляем null элементы из результата
+    }
 
-        // Apply sorting
-        result.sort((a, b) => {
-            switch (sortBy) {
+    // Рекурсивная сортировка с сохранением структуры дерева
+    const sortTasksRecursively = (taskList, sortType) => {
+        const sortedTasks = [...taskList].sort((a, b) => {
+            switch (sortType) {
                 case "newest":
-                    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+                    return new Date(b.startDate || 0) - new Date(a.startDate || 0)
                 case "oldest":
-                    return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+                    return new Date(a.startDate || 0) - new Date(b.startDate || 0)
                 case "name-asc":
                     return a.name.localeCompare(b.name)
                 case "name-desc":
@@ -75,12 +134,31 @@ export default function TasksPage() {
                     const aDate = a.endDate ? new Date(a.endDate) : new Date(9999, 11, 31)
                     const bDate = b.endDate ? new Date(b.endDate) : new Date(9999, 11, 31)
                     return aDate - bDate
+                case "importance":
+                    return b.importance - a.importance
                 default:
                     return 0
             }
         })
 
-        setFilteredTasks(result)
+        // Рекурсивно сортируем дочерние элементы
+        return sortedTasks.map(task => ({
+            ...task,
+            children: task.children && task.children.length > 0
+                ? sortTasksRecursively(task.children, sortType)
+                : []
+        }))
+    }
+
+    useEffect(() => {
+        // Применяем фильтрацию и сортировку с сохранением иерархии
+        if (tasks.length > 0) {
+            const filteredResults = filterTasksRecursively(tasks, searchTerm, statusFilter)
+            const sortedResults = sortTasksRecursively(filteredResults, sortBy)
+            setFilteredTasks(sortedResults)
+        } else {
+            setFilteredTasks([])
+        }
     }, [tasks, searchTerm, statusFilter, sortBy])
 
     const handleSave = () => {
@@ -92,8 +170,10 @@ export default function TasksPage() {
         setEditingTask(task)
     }
 
-    const completedCount = tasks.filter((task) => task.completed).length
-    const activeCount = tasks.filter((task) => !task.completed).length
+    // Подсчет задач с учетом вложенности
+    const totalTaskCount = countAllTasks(tasks)
+    const completedCount = countCompletedTasks(tasks)
+    const activeCount = totalTaskCount - completedCount
 
     return (
         <div className="space-y-6">
@@ -118,7 +198,7 @@ export default function TasksPage() {
                         <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{tasks.length}</div>
+                        <div className="text-2xl font-bold">{totalTaskCount}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -135,9 +215,9 @@ export default function TasksPage() {
                     </CardHeader>
                     <CardContent className="flex items-center">
                         <div className="text-2xl font-bold">{completedCount}</div>
-                        {tasks.length > 0 && (
+                        {totalTaskCount > 0 && (
                             <Badge variant="outline" className="ml-2">
-                                {Math.round((completedCount / tasks.length) * 100)}%
+                                {Math.round((completedCount / totalTaskCount) * 100)}%
                             </Badge>
                         )}
                     </CardContent>
@@ -177,6 +257,7 @@ export default function TasksPage() {
                             <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                             <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                             <SelectItem value="due-soon">Due Date</SelectItem>
+                            <SelectItem value="importance">By Importance</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -199,7 +280,7 @@ export default function TasksPage() {
                             {editingTask && (
                                 <div className="mb-6">
                                     <h3 className="mb-2 text-lg font-medium">Edit Task</h3>
-                                    <TaskForm task={editingTask} onSave={handleSave} />
+                                    <TaskForm task={editingTask} onSave={handleSave} allTasks={tasks} />
                                 </div>
                             )}
                             <TaskTable
@@ -207,6 +288,7 @@ export default function TasksPage() {
                                 onEdit={handleEdit}
                                 onDelete={fetchTasks}
                                 isLoading={isLoading}
+                                searchTerm={searchTerm}
                             />
                         </CardContent>
                     </Card>
@@ -225,24 +307,37 @@ export default function TasksPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-medium">To Do</h3>
-                                        <Badge variant="outline">{filteredTasks.filter(t => !t.completed).length}</Badge>
+                                        <Badge variant="outline">
+                                            {filteredTasks.filter(t => t.status === 0).length}
+                                        </Badge>
                                     </div>
                                     <div className="space-y-2">
                                         {filteredTasks
-                                            .filter(task => !task.completed)
+                                            .filter(task => task.status === 0)
                                             .map(task => (
-                                                <Card key={task.id} className="cursor-pointer hover:bg-muted/50">
+                                                <Card
+                                                    key={task.id}
+                                                    className="cursor-pointer hover:bg-muted/50"
+                                                    onClick={() => handleEdit(task)}
+                                                >
                                                     <CardHeader className="p-3">
-                                                        <CardTitle className="text-sm">{task.name}</CardTitle>
+                                                        <CardTitle className="text-sm">
+                                                            {highlightText(task.name, searchTerm)}
+                                                        </CardTitle>
+                                                        {task.children && task.children.length > 0 && (
+                                                            <Badge variant="secondary" className="mt-1">
+                                                                {task.children.length} subtasks
+                                                            </Badge>
+                                                        )}
                                                     </CardHeader>
                                                     <CardContent className="p-3 pt-0">
                                                         <p className="line-clamp-2 text-xs text-muted-foreground">
-                                                            {task.description || "No description"}
+                                                            {highlightText(task.description || "No description", searchTerm)}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
                                             ))}
-                                        {filteredTasks.filter(t => !t.completed).length === 0 && (
+                                        {filteredTasks.filter(t => t.status === 0).length === 0 && (
                                             <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
                                                 <p className="text-sm text-muted-foreground">No tasks</p>
                                             </div>
@@ -254,10 +349,41 @@ export default function TasksPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-medium">In Progress</h3>
-                                        <Badge variant="outline">0</Badge>
+                                        <Badge variant="outline">
+                                            {filteredTasks.filter(t => t.status === 2).length}
+                                        </Badge>
                                     </div>
-                                    <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-                                        <p className="text-sm text-muted-foreground">No tasks</p>
+                                    <div className="space-y-2">
+                                        {filteredTasks
+                                            .filter(task => task.status === 2)
+                                            .map(task => (
+                                                <Card
+                                                    key={task.id}
+                                                    className="cursor-pointer hover:bg-muted/50"
+                                                    onClick={() => handleEdit(task)}
+                                                >
+                                                    <CardHeader className="p-3">
+                                                        <CardTitle className="text-sm">
+                                                            {highlightText(task.name, searchTerm)}
+                                                        </CardTitle>
+                                                        {task.children && task.children.length > 0 && (
+                                                            <Badge variant="secondary" className="mt-1">
+                                                                {task.children.length} subtasks
+                                                            </Badge>
+                                                        )}
+                                                    </CardHeader>
+                                                    <CardContent className="p-3 pt-0">
+                                                        <p className="line-clamp-2 text-xs text-muted-foreground">
+                                                            {highlightText(task.description || "No description", searchTerm)}
+                                                        </p>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        {filteredTasks.filter(t => t.status === 2).length === 0 && (
+                                            <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
+                                                <p className="text-sm text-muted-foreground">No tasks</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -265,27 +391,40 @@ export default function TasksPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="font-medium">Completed</h3>
-                                        <Badge variant="outline">{filteredTasks.filter(t => t.completed).length}</Badge>
+                                        <Badge variant="outline">
+                                            {filteredTasks.filter(t => t.status === 1).length}
+                                        </Badge>
                                     </div>
                                     <div className="space-y-2">
                                         {filteredTasks
-                                            .filter(task => task.completed)
+                                            .filter(task => task.status === 1)
                                             .map(task => (
-                                                <Card key={task.id} className="cursor-pointer hover:bg-muted/50">
+                                                <Card
+                                                    key={task.id}
+                                                    className="cursor-pointer hover:bg-muted/50"
+                                                    onClick={() => handleEdit(task)}
+                                                >
                                                     <CardHeader className="p-3">
                                                         <div className="flex items-center justify-between">
-                                                            <CardTitle className="text-sm">{task.name}</CardTitle>
+                                                            <CardTitle className="text-sm">
+                                                                {highlightText(task.name, searchTerm)}
+                                                            </CardTitle>
                                                             <CheckCircle2 className="h-4 w-4 text-green-500" />
                                                         </div>
+                                                        {task.children && task.children.length > 0 && (
+                                                            <Badge variant="secondary" className="mt-1">
+                                                                {task.children.length} subtasks
+                                                            </Badge>
+                                                        )}
                                                     </CardHeader>
                                                     <CardContent className="p-3 pt-0">
                                                         <p className="line-clamp-2 text-xs text-muted-foreground">
-                                                            {task.description || "No description"}
+                                                            {highlightText(task.description || "No description", searchTerm)}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
                                             ))}
-                                        {filteredTasks.filter(t => t.completed).length === 0 && (
+                                        {filteredTasks.filter(t => t.status === 1).length === 0 && (
                                             <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
                                                 <p className="text-sm text-muted-foreground">No tasks</p>
                                             </div>
@@ -299,4 +438,31 @@ export default function TasksPage() {
             </Tabs>
         </div>
     )
+}
+
+// Функция для выделения текста при поиске
+function highlightText(text, searchTerm) {
+    if (!searchTerm || !text) return text;
+
+    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+        <>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 px-0.5 rounded">
+                        {part}
+                    </mark>
+                ) : (
+                    part
+                )
+            )}
+        </>
+    );
+}
+
+// Вспомогательная функция для экранирования специальных символов в регулярных выражениях
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

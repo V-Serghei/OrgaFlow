@@ -11,37 +11,94 @@ import { Textarea } from "@/components/ui/textarea"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import api from "@/lib/api"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { formatISO } from "date-fns"
 
-export function TaskForm({ task, onSave }) {
-    const [name, setName] = useState("")
-    const [description, setDescription] = useState("")
-    const [startDate, setStartDate] = useState(null)
-    const [endDate, setEndDate] = useState(null)
+// Исправлено: добавлены импорты
+import React from "react"
+
+// Flatten task hierarchy for parent selection dropdown
+const flattenTasks = (tasks, result = []) => {
+    tasks.forEach(task => {
+        result.push(task);
+        if (task.children && task.children.length > 0) {
+            flattenTasks(task.children, result);
+        }
+    });
+    return result;
+};
+
+export function TaskForm({ task, onSave, allTasks = [] }) {
+    const [formData, setFormData] = useState({
+        id: 0,
+        name: "",
+        description: "",
+        status: 0,
+        importance: 1,
+        startDate: null,
+        endDate: null,
+        notify: false,
+        parentId: null,
+        children: []
+    })
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Flatten tasks for parent selection, excluding the current task
+    const flattenedTasks = flattenTasks(allTasks)
+        .filter(t => !task || t.id !== task.id);
 
     useEffect(() => {
         if (task) {
-            setName(task.name || "")
-            setDescription(task.description || "")
-            setStartDate(task.startDate ? new Date(task.startDate) : null)
-            setEndDate(task.endDate ? new Date(task.endDate) : null)
+            setFormData({
+                id: task.id || 0,
+                name: task.name || "",
+                description: task.description || "",
+                status: task.status || 0,
+                importance: task.importance || 1,
+                startDate: task.startDate ? new Date(task.startDate) : null,
+                endDate: task.endDate ? new Date(task.endDate) : null,
+                notify: task.notify || false,
+                parentId: task.parentId,
+                children: task.children || []
+            })
         } else {
-            setName("")
-            setDescription("")
-            setStartDate(null)
-            setEndDate(null)
+            setFormData({
+                id: 0,
+                name: "",
+                description: "",
+                status: 0,
+                importance: 1,
+                startDate: null,
+                endDate: null,
+                notify: false,
+                parentId: null,
+                children: []
+            })
         }
     }, [task])
+
+    const handleChange = (field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }))
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setIsSubmitting(true)
 
         const taskData = {
-            name,
-            description,
-            startDate: startDate ? format(startDate, "yyyy-MM-dd") : null,
-            endDate: endDate ? format(endDate, "yyyy-MM-dd") : null,
+            ...formData,
+            startDate: formData.startDate ? formatISO(formData.startDate) : null,
+            endDate: formData.endDate ? formatISO(formData.endDate) : null,
         }
 
         try {
@@ -54,10 +111,18 @@ export function TaskForm({ task, onSave }) {
 
             // Reset form if not editing
             if (!task) {
-                setName("")
-                setDescription("")
-                setStartDate(null)
-                setEndDate(null)
+                setFormData({
+                    id: 0,
+                    name: "",
+                    description: "",
+                    status: 0,
+                    importance: 1,
+                    startDate: null,
+                    endDate: null,
+                    notify: false,
+                    parentId: null,
+                    children: []
+                })
             }
         } catch (error) {
             console.error("Error saving task:", error)
@@ -73,21 +138,59 @@ export function TaskForm({ task, onSave }) {
                 <Input
                     id="name"
                     placeholder="Enter task name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    value={formData.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
                     required
                 />
             </div>
+
             <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                     id="description"
                     placeholder="Enter task description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={formData.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
                     rows={3}
                 />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select
+                        value={formData.status.toString()}
+                        onValueChange={(value) => handleChange("status", parseInt(value))}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="0">In Progress</SelectItem>
+                            <SelectItem value="1">Completed</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="importance">Importance</Label>
+                    <Select
+                        value={formData.importance.toString()}
+                        onValueChange={(value) => handleChange("importance", parseInt(value))}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select importance" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="0">Low</SelectItem>
+                            <SelectItem value="1">Medium</SelectItem>
+                            <SelectItem value="2">High</SelectItem>
+                            <SelectItem value="3">Critical</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                     <Label>Start Date</Label>
@@ -95,45 +198,81 @@ export function TaskForm({ task, onSave }) {
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
-                                className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}
+                                className={cn("w-full justify-start text-left font-normal", !formData.startDate && "text-muted-foreground")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {startDate ? format(startDate, "PPP") : "Select date"}
+                                {formData.startDate ? format(formData.startDate, "PPP") : "Select date"}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
-                            <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                            <Calendar
+                                mode="single"
+                                selected={formData.startDate}
+                                onSelect={(date) => handleChange("startDate", date)}
+                                initialFocus
+                            />
                         </PopoverContent>
                     </Popover>
                 </div>
+
                 <div className="grid gap-2">
                     <Label>End Date</Label>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
-                                className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}
+                                className={cn("w-full justify-start text-left font-normal", !formData.endDate && "text-muted-foreground")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {endDate ? format(endDate, "PPP") : "Select date"}
+                                {formData.endDate ? format(formData.endDate, "PPP") : "Select date"}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0">
                             <Calendar
                                 mode="single"
-                                selected={endDate}
-                                onSelect={setEndDate}
+                                selected={formData.endDate}
+                                onSelect={(date) => handleChange("endDate", date)}
                                 initialFocus
-                                disabled={(date) => (startDate ? date < startDate : false)}
+                                disabled={(date) => (formData.startDate ? date < formData.startDate : false)}
                             />
                         </PopoverContent>
                     </Popover>
                 </div>
             </div>
+
+            <div className="grid gap-2">
+                <Label htmlFor="parentId">Parent Task</Label>
+                <Select
+                    value={formData.parentId?.toString() || "null"}
+                    onValueChange={(value) => handleChange("parentId", value === "null" ? null : parseInt(value))}
+                >
+                    <SelectTrigger>
+                        <SelectValue placeholder="No parent (top-level task)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {/* Исправлено: заменена пустая строка на "null" */}
+                        <SelectItem value="null">No parent (top-level task)</SelectItem>
+                        {flattenedTasks.map(t => (
+                            <SelectItem key={t.id} value={t.id.toString()}>
+                                {t.name} (ID: {t.id})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+                <Switch
+                    id="notify"
+                    checked={formData.notify}
+                    onCheckedChange={(checked) => handleChange("notify", checked)}
+                />
+                <Label htmlFor="notify">Enable notifications</Label>
+            </div>
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Saving..." : task ? "Update Task" : "Create Task"}
             </Button>
         </form>
     )
 }
-

@@ -7,4 +7,6 @@ export type Task = {
     startDate?: string
     endDate?: string
     notify?: boolean
+    parentId?: string
+    children?: Task[]
 }

@@ -162,6 +162,8 @@ public class TaskRepository
         }
         
         var dbModel = task.Adapt<TaskDbModel>();
+        dbModel.StartDate = task.StartDate.ToUniversalTime();
+        dbModel.EndDate = task.EndDate.ToUniversalTime();
         await _context.TaskTable.AddAsync(dbModel, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return dbModel.Adapt<ETask>();
