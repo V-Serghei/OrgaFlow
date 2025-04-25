@@ -115,7 +115,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://192.168.55.51:3000")
+        policy.WithOrigins("http://192.168.15.51:3000")
             .AllowCredentials()
             .AllowAnyMethod()
             .AllowAnyHeader();
