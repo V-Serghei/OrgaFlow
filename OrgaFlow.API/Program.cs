@@ -7,6 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using OrgaFlow.Application;
+using OrgaFlow.Application.ChainOfResponsibility;
+using OrgaFlow.Application.ChainOfResponsibility.Emails;
+using OrgaFlow.Application.ChainOfResponsibility.Handlers;
+using OrgaFlow.Application.ChainOfResponsibility.Tasks;
+using OrgaFlow.Application.ChainOfResponsibility.Users;
 using OrgaFlow.Application.Controllers.Facade;
 using OrgaFlow.Application.Decorator;
 using OrgaFlow.Application.Proxy.Interfaces;
@@ -76,8 +81,24 @@ builder.Services.AddHttpClient("EmailService",
     });
 
 // Register repositories and services
-builder.Services.AddScoped<IOrgaFlowFacade, OrgaFlowFacade>();
-
+// builder.Services.AddScoped<IOrgaFlowFacade, OrgaFlowFacade>();
+builder.Services.AddScoped<ChainFactory>();
+builder.Services.AddScoped<ChainManager>();
+            
+builder.Services.AddTransient(typeof(AuthenticationHandler<,>));
+builder.Services.AddTransient(typeof(TokenValidationHandler<,>));
+builder.Services.AddTransient(typeof(InactivityCheckHandler<,>));
+builder.Services.AddTransient(typeof(TokenRefreshHandler<,>));
+builder.Services.AddTransient(typeof(LoggingHandler<,>));
+            
+builder.Services.AddTransient<TaskOperationHandler>();
+            
+builder.Services.AddTransient<UserOperationHandler>();
+builder.Services.AddTransient<UserTokenHandler>();
+            
+builder.Services.AddTransient<EmailOperationHandler>();
+            
+builder.Services.AddScoped<IOrgaFlowFacade, EnhancedOrgaFlowFacade>();
 
 //register proxy components
 builder.Services.AddHttpContextAccessor();
@@ -94,30 +115,22 @@ builder.Services.AddScoped<IUserService>(sp =>
 builder.Services.AddScoped<TaskService>();
 builder.Services.AddScoped<ITaskService>(sp =>
 {
-    // Получаем реальную базовую реализацию
     ITaskService realService = sp.GetRequiredService<TaskService>();
 
-    // Получаем необходимые зависимости для декоратора
     var memoryCache = sp.GetRequiredService<IMemoryCache>();
 
-    // Создаем декоратор, который оборачивает реальную реализацию
     ITaskService decorated = new CachingTaskServiceDecorator(realService, memoryCache);
 
-    // Затем возвращаем декорированный сервис, но пока без Proxy
     return decorated;
 });
-// Пере-регистрация ITaskService с прокси: можно перерегистрировать тот же интерфейс,
 builder.Services.Decorate<ITaskService, TaskServiceProxy>();
 builder.Services.AddScoped<ITaskService>(sp =>
 {
-    // Базовая реализация
     ITaskService realService = sp.GetRequiredService<TaskService>();
 
-    // Декоратор для кэширования
     var memoryCache = sp.GetRequiredService<IMemoryCache>();
     ITaskService decorated = new CachingTaskServiceDecorator(realService, memoryCache);
 
-    // Прокси, который оборачивает декоратор
     var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
     ITaskService proxied = new TaskServiceProxy(decorated, httpContextAccessor);
 
