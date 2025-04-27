@@ -71,6 +71,11 @@ public class TaskRepository
 
         return rootTasks;
     }
+    public async Task<List<ETask>> GetAllTasks(CancellationToken cancellationToken)
+    {
+        var allTasks = await GetAllTaskData(cancellationToken);
+        return allTasks;
+    }
 
     private ITaskComponent BuildTaskTreeRecursive(ETask taskData, Dictionary<int, ETask> taskMap, Dictionary<int, ITaskComponent> componentMap)
     {

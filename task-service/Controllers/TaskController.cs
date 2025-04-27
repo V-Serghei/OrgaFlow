@@ -36,6 +36,34 @@ namespace task_service.Controllers
             var tasks = await _mediator.Send(new GetAllTasksQuery(), cancellationToken);
             return Ok(tasks);
         }
+        
+        
+        [HttpGet]
+        public async Task<IActionResult> GetAllTasks(
+            [FromQuery] int? dueSoon,
+            [FromQuery] bool? overdue,
+            CancellationToken cancellationToken)
+        {
+            if (dueSoon.HasValue)
+            {
+                var tasks = await _mediator
+                    .Send(new GetTasksDueWithinHoursQuery(dueSoon.Value),
+                        cancellationToken);
+                return Ok(tasks);
+            }
+
+            if (overdue == true)
+            {
+                var tasks = await _mediator
+                    .Send(new GetOverdueTasksQuery(), cancellationToken);
+                return Ok(tasks);
+            }
+
+            // если ни dueSoon, ни overdue не заданы — возвращаем всё
+            var all = await _mediator
+                .Send(new GetAllTasksQuery(), cancellationToken);
+            return Ok(all);
+        }
 
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskCommand command,

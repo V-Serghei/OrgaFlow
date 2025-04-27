@@ -12,4 +12,5 @@ public class TaskDto
     public bool Notify { get; set; }
     public int? ParentId { get; set; }
     public List<TaskDto> Children { get; set; } = new List<TaskDto>();
+    public int AssignedUserId { get; set; }
 }
