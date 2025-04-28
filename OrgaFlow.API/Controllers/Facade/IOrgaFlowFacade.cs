@@ -23,6 +23,7 @@ public interface IOrgaFlowFacade
     Task<TaskDto> CreateTaskAsync(TaskDto dto);
     Task UpdateTaskAsync(int id, TaskDto dto);
     Task DeleteTaskAsync(int id);
+    Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null);
     
     // Email Facade
     Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth);

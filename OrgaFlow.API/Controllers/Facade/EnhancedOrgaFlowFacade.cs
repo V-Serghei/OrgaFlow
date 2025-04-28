@@ -232,6 +232,24 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
         
         return new { User = result.Response.User, Token = result.Response.Token };
     }
+    public async Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
+    {
+        var request = new TaskOperationRequest
+        {
+            Operation = "GetSorted",
+            SortBy = sortBy,
+            NotificationsEnabled = notificationsEnabled
+        };
+    
+        var result = await _chainManager.ProcessTaskRequest(request, "GetSortedTasks");
+    
+        if (!result.IsSuccessful)
+        {
+            throw new UnauthorizedAccessException(result.ErrorMessage);
+        }
+    
+        return result.Response.Tasks ?? Array.Empty<TaskDto>();
+    }
     
     // ---------------- EMAIL ----------------
     public async Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth)

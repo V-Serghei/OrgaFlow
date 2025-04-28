@@ -7,7 +7,7 @@ using OrgaFlow.Application.Controllers.Facade;
 
 namespace OrgaFlow.Application.Controllers.TaskController
 {
-    [ApiController]
+ [ApiController]
     [Route("api/task")]
     public class TaskController : ControllerBase
     {
@@ -32,17 +32,25 @@ namespace OrgaFlow.Application.Controllers.TaskController
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks()
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks(
+            [FromQuery] string sortBy = "newest",
+            [FromQuery] bool? notificationsEnabled = null)
         {
             try
             {
+                // Use the sorting strategy if provided
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    return Ok(await _facade.GetSortedTasksAsync(sortBy, notificationsEnabled));
+                }
+                
+                // Fall back to normal behavior
                 return Ok(await _facade.GetAllTasksAsync());
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
-
         }
 
         [HttpGet("{id}")]
@@ -88,7 +96,6 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 return Forbid(ex.Message);
             }
-            
         }
 
         [HttpDelete("{id}")]

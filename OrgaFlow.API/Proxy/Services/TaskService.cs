@@ -2,6 +2,7 @@ using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
 
 namespace OrgaFlow.Application.Proxy.Services;
+
 public class TaskService : ITaskService
 {
     private readonly HttpClient _client;
@@ -13,6 +14,22 @@ public class TaskService : ITaskService
 
     public async Task<IEnumerable<TaskDto>> GetAllTasksAsync() =>
         await _client.GetFromJsonAsync<IEnumerable<TaskDto>>("") ?? [];
+
+    public async Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
+    {
+        var queryParams = new List<string>();
+        
+        if (!string.IsNullOrEmpty(sortBy))
+            queryParams.Add($"sortBy={sortBy}");
+            
+        if (notificationsEnabled.HasValue)
+            queryParams.Add($"notificationsEnabled={notificationsEnabled.Value}");
+            
+        var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+        
+        var response = await _client.GetFromJsonAsync<IEnumerable<TaskDto>>($"{queryString}") ?? [];
+        return response;
+    }
 
     public async Task<TaskDto?> GetTaskByIdAsync(int id)
     {

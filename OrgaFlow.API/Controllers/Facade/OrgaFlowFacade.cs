@@ -180,6 +180,10 @@ public class OrgaFlowFacade : IOrgaFlowFacade
     }
 
     public Task DeleteTaskAsync(int id) => _taskService.DeleteTaskAsync(id);
+    public Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
+    {
+        throw new NotImplementedException();
+    }
 
     // ---------------- EMAIL ----------------
     public Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth) => _emailService.GetInboxAsync(auth);

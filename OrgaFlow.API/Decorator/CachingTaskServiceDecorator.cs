@@ -33,6 +33,20 @@ public class CachingTaskServiceDecorator : ITaskService
         _cache.Set(cacheKey, allTasksAsync, _cacheOptions);
         return allTasksAsync;
     }
+    
+    public async Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
+    {
+        var cacheKey = $"sorted_tasks_{sortBy}_{notificationsEnabled}";
+        if (_cache.TryGetValue(cacheKey, out IEnumerable<TaskDto>? tasks))
+        {
+            if (tasks != null) return tasks;
+        }
+
+        tasks = await _inner.GetSortedTasksAsync(sortBy, notificationsEnabled);
+        var sortedTasks = tasks.ToList();
+        _cache.Set(cacheKey, sortedTasks, _cacheOptions);
+        return sortedTasks;
+    }
 
     public async Task<TaskDto?> GetTaskByIdAsync(int id)
     {
@@ -54,6 +68,8 @@ public class CachingTaskServiceDecorator : ITaskService
     {
         var createdTask = await _inner.CreateTaskAsync(task);
         _cache.Remove("all_tasks");
+        // Also invalidate any sorted task caches
+        RemoveSortedTasksCache();
         return createdTask;
     }
 
@@ -62,6 +78,8 @@ public class CachingTaskServiceDecorator : ITaskService
         await _inner.UpdateTaskAsync(task);
         _cache.Remove($"task_{task.Id}");
         _cache.Remove("all_tasks");
+        // Also invalidate any sorted task caches
+        RemoveSortedTasksCache();
     }
 
     public async Task DeleteTaskAsync(int id)
@@ -69,5 +87,29 @@ public class CachingTaskServiceDecorator : ITaskService
         await _inner.DeleteTaskAsync(id);
         _cache.Remove($"task_{id}");
         _cache.Remove("all_tasks");
+        // Also invalidate any sorted task caches
+        RemoveSortedTasksCache();
+    }
+    
+    private void RemoveSortedTasksCache()
+    {
+        // This is a simple approach; in a real-world scenario, you might want to
+        // use a more sophisticated cache key pattern or cache tags
+        var cacheKeys = new[]
+        {
+            "sorted_tasks_newest_",
+            "sorted_tasks_oldest_",
+            "sorted_tasks_name-asc_",
+            "sorted_tasks_name-desc_",
+            "sorted_tasks_due-soon_",
+            "sorted_tasks_importance_"
+        };
+        
+        foreach (var key in cacheKeys)
+        {
+            _cache.Remove(key + "True");
+            _cache.Remove(key + "False");
+            _cache.Remove(key + "");
+        }
     }
 }

@@ -77,7 +77,11 @@ public class TaskOperationHandler: BaseRequestHandler<TaskOperationRequest, Task
                         await _taskService.DeleteTaskAsync(context.Request.TaskId.Value);
                         context.Response = new TaskOperationResponse();
                         break;
-                        
+                    case "GetSorted":    
+                        var sortedTasks = await _taskService.GetSortedTasksAsync(context.Request.SortBy, context.Request.NotificationsEnabled);
+                        context.Response = new TaskOperationResponse { Tasks = sortedTasks };
+                        break;
+                    
                     default:
                         context.ErrorMessage = $"Unknown operation: {context.Request.Operation}";
                         context.ErrorCode = "UNKNOWN_OPERATION";

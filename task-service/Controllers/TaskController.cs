@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using task_service.Application.Tasks.Commands;
 using task_service.Application.Tasks.Queries;
 using task_service.Domain;
+using task_service.Sorting;
 
 namespace task_service.Controllers
 {
@@ -13,12 +14,17 @@ namespace task_service.Controllers
     public class TaskController : ControllerBase
     {
         private readonly IMediator _mediator;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly SortContext _sortContext;
+        private readonly ILogger<TaskController> _logger;
 
-        public TaskController(IMediator mediator, IHttpClientFactory httpClientFactory)
+        public TaskController(
+            IMediator mediator, 
+            SortContext sortContext,
+            ILogger<TaskController> logger)
         {
             _mediator = mediator;
-            _httpClientFactory = httpClientFactory;
+            _sortContext = sortContext;
+            _logger = logger;
         }
 
         [HttpGet("{id}")]
@@ -31,40 +37,53 @@ namespace task_service.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllTasks(CancellationToken cancellationToken)
-        {
-            var tasks = await _mediator.Send(new GetAllTasksQuery(), cancellationToken);
-            return Ok(tasks);
-        }
-        
-        
-        [HttpGet]
-        public async Task<IActionResult> GetAllTasks(
+        public async Task<IActionResult> GetTasks(
             [FromQuery] int? dueSoon,
             [FromQuery] bool? overdue,
-            CancellationToken cancellationToken)
+            [FromQuery] string sortBy = "newest",
+            [FromQuery] bool? notificationsEnabled = null,
+            CancellationToken cancellationToken = default)
         {
-            if (dueSoon.HasValue)
+            try
             {
-                var tasks = await _mediator
-                    .Send(new GetTasksDueWithinHoursQuery(dueSoon.Value),
-                        cancellationToken);
-                return Ok(tasks);
-            }
+                // Handle special queries first
+                if (dueSoon.HasValue)
+                {
+                    _logger.LogInformation("Getting tasks due within {Hours} hours", dueSoon.Value);
+                    var tasks = await _mediator
+                        .Send(new GetTasksDueWithinHoursQuery(dueSoon.Value), cancellationToken);
+                    return Ok(tasks);
+                }
 
-            if (overdue == true)
+                if (overdue == true)
+                {
+                    _logger.LogInformation("Getting overdue tasks");
+                    var tasks = await _mediator
+                        .Send(new GetOverdueTasksQuery(), cancellationToken);
+                    return Ok(tasks);
+                }
+
+                // Use the sorting strategy pattern for normal queries
+                _logger.LogInformation("Getting tasks with sort strategy: {Strategy}", sortBy);
+                var sortedTasks = await _mediator.Send(
+                    new GetSortedTasksQuery(sortBy, notificationsEnabled), 
+                    cancellationToken);
+                return Ok(sortedTasks);
+            }
+            catch (ArgumentException ex)
             {
-                var tasks = await _mediator
-                    .Send(new GetOverdueTasksQuery(), cancellationToken);
-                return Ok(tasks);
+                _logger.LogWarning(ex, "Invalid sort strategy requested");
+                return BadRequest($"Invalid sort strategy: {ex.Message}");
             }
-
-            // если ни dueSoon, ни overdue не заданы — возвращаем всё
-            var all = await _mediator
-                .Send(new GetAllTasksQuery(), cancellationToken);
-            return Ok(all);
         }
 
+        [HttpGet("sort-options")]
+        public IActionResult GetSortOptions()
+        {
+            return Ok(_sortContext.GetAvailableSortingStrategies());
+        }
+
+        // Existing endpoints remain unchanged
         [HttpPost]
         public async Task<IActionResult> CreateTask([FromBody] CreateTaskCommand command,
             CancellationToken cancellationToken)
@@ -93,4 +112,6 @@ namespace task_service.Controllers
             return NoContent();
         }
     }
+        
+    
 }

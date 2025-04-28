@@ -232,4 +232,22 @@ public class TaskRepository
             CollectTaskIdsToDelete(child.Id, allTasks, idsToDelete);
         }
     }
+
+    public async Task<IEnumerable<ITaskComponent>> GetAllTasksComponent(CancellationToken cancellationToken)
+    {
+        var allTasks = await GetAllTaskData(cancellationToken);
+        var taskMap = allTasks.ToDictionary(t => t.Id);
+        var rootTasks = new List<ITaskComponent>();
+        var componentMap = new Dictionary<int, ITaskComponent>();
+
+        var rootTaskModels = allTasks.Where(t => t.ParentId == null).ToList();
+        
+        foreach (var rootTask in rootTaskModels)
+        {
+            var rootComponent = BuildTaskTreeRecursive(rootTask, taskMap, componentMap);
+            rootTasks.Add(rootComponent);
+        }
+
+        return rootTasks;
+    }
 }

@@ -22,11 +22,20 @@ export default function TasksPage() {
     const [editingTask, setEditingTask] = useState(null)
     const [isLoading, setIsLoading] = useState(true)
 
+
     const fetchTasks = async () => {
         try {
             setIsLoading(true)
-            const response = await api.get("/")
+            const response = await api.get("/", {
+                params: {
+                    sortBy: sortBy, // Send the sort strategy to the backend
+                    notificationsEnabled: statusFilter === 'completed' ? true : undefined
+                }
+            })
             setTasks(response.data)
+
+            // Since data comes pre-sorted, we only need to apply local filtering
+            setFilteredTasks(filterTasksRecursively(response.data, searchTerm, statusFilter))
         } catch (error) {
             console.error("Error loading tasks:", error)
         } finally {
@@ -34,9 +43,21 @@ export default function TasksPage() {
         }
     }
 
+// Update useEffect to fetch tasks when sortBy changes
     useEffect(() => {
         fetchTasks()
-    }, [])
+    }, [sortBy]) // Add sortBy to the dependency array
+
+// Remove the sortTasksRecursively function call from the filtering useEffect
+    useEffect(() => {
+        // Only apply filtering with preservation of hierarchy
+        if (tasks.length > 0) {
+            const filteredResults = filterTasksRecursively(tasks, searchTerm, statusFilter)
+            setFilteredTasks(filteredResults)
+        } else {
+            setFilteredTasks([])
+        }
+    }, [tasks, searchTerm, statusFilter]) // Remove sortBy from here
 
     // Рекурсивная функция для подсчета всех задач (включая вложенные)
     const countAllTasks = (taskList) => {
