@@ -1,11 +1,15 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Authorization;
-using task_service.Application.Tasks.Commands;
+using Mapster;
 using task_service.Application.Tasks.Queries;
+using task_service.Commands;
 using task_service.Domain;
+using task_service.Repository;
 using task_service.Sorting;
+using CreateTaskCommand = task_service.Commands.CreateTaskCommand;
+using DeleteTaskCommand = task_service.Commands.DeleteTaskCommand;
+using UpdateTaskCommand = task_service.Commands.UpdateTaskCommand;
 
 namespace task_service.Controllers
 {
@@ -16,15 +20,24 @@ namespace task_service.Controllers
         private readonly IMediator _mediator;
         private readonly SortContext _sortContext;
         private readonly ILogger<TaskController> _logger;
+        private readonly ITaskRepository _repository;
+        private readonly CommandInvoker _commandInvoker;
+        private readonly TaskCommandFactory _commandFactory;
 
         public TaskController(
             IMediator mediator, 
             SortContext sortContext,
-            ILogger<TaskController> logger)
+            ILogger<TaskController> logger,
+            ITaskRepository repository,
+            CommandInvoker commandInvoker,
+            TaskCommandFactory commandFactory)
         {
             _mediator = mediator;
             _sortContext = sortContext;
             _logger = logger;
+            _repository = repository;
+            _commandInvoker = commandInvoker;
+            _commandFactory = commandFactory;
         }
 
         [HttpGet("{id}")]
@@ -50,24 +63,20 @@ namespace task_service.Controllers
                 if (dueSoon.HasValue)
                 {
                     _logger.LogInformation("Getting tasks due within {Hours} hours", dueSoon.Value);
-                    var tasks = await _mediator
-                        .Send(new GetTasksDueWithinHoursQuery(dueSoon.Value), cancellationToken);
+                    var tasks = await _repository.GetTasksDueWithinHoursAsync(dueSoon.Value);
                     return Ok(tasks);
                 }
 
                 if (overdue == true)
                 {
                     _logger.LogInformation("Getting overdue tasks");
-                    var tasks = await _mediator
-                        .Send(new GetOverdueTasksQuery(), cancellationToken);
+                    var tasks = await _repository.GetOverdueTasksAsync();
                     return Ok(tasks);
                 }
 
                 // Use the sorting strategy pattern for normal queries
                 _logger.LogInformation("Getting tasks with sort strategy: {Strategy}", sortBy);
-                var sortedTasks = await _mediator.Send(
-                    new GetSortedTasksQuery(sortBy, notificationsEnabled), 
-                    cancellationToken);
+                var sortedTasks = await _repository.GetSortedTasksAsync(sortBy, notificationsEnabled);
                 return Ok(sortedTasks);
             }
             catch (ArgumentException ex)
@@ -83,35 +92,118 @@ namespace task_service.Controllers
             return Ok(_sortContext.GetAvailableSortingStrategies());
         }
 
-        // Existing endpoints remain unchanged
+        // Updated endpoints using Command pattern
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] CreateTaskCommand command,
-            CancellationToken cancellationToken)
+        public async Task<IActionResult> CreateTask([FromBody] ETask task)
         {
-            var createdTask = await _mediator.Send(command, cancellationToken);
-            return CreatedAtAction(nameof(GetTaskById), new { id = createdTask.Id }, createdTask);
+            try
+            {
+                _logger.LogInformation("Creating new task: {TaskName}", task.Name);
+                
+                // Set default values for current user and time
+                task.CreatedBy = "V-Serghei"; // Current user
+                task.CreatedAt = DateTime.UtcNow; // Current time
+                
+                var command = new CreateTaskCommand(task.Adapt<TaskDto>(), _repository);
+                var result = await _commandInvoker.ExecuteCommand(command);
+                var createdTask = (ETask)result;
+                
+                _logger.LogInformation("Task created successfully with ID: {TaskId}", createdTask.Id);
+                return CreatedAtAction(nameof(GetTaskById), new { id = createdTask.Id }, createdTask);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Failed to create task");
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, [FromBody] UpdateTaskCommand command,
-            CancellationToken cancellationToken)
+        public async Task<IActionResult> UpdateTask(int id, [FromBody] ETask task)
         {
-            if (id != command.Id)
-                return BadRequest("Task ID mismatch.");
+            try
+            {
+                if (id != task.Id)
+                    return BadRequest("Task ID mismatch.");
 
-            var updatedTask = await _mediator.Send(command, cancellationToken);
-            return Ok(updatedTask);
+                _logger.LogInformation("Updating task with ID: {TaskId}", id);
+                var command = new UpdateTaskCommand(task.Adapt<TaskDto>(), _repository);
+                var result = await _commandInvoker.ExecuteCommand(command);
+                var updatedTask = (ETask)result;
+                
+                _logger.LogInformation("Task updated successfully: {TaskId}", id);
+                return Ok(updatedTask);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Failed to update task with ID: {TaskId}", id);
+                return NotFound(ex.Message);
+            }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTask(int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteTask(int id)
         {
-            var result = await _mediator.Send(new DeleteTaskCommand(id), cancellationToken);
-            if (!result)
-                return NotFound();
-            return NoContent();
+            try
+            {
+                _logger.LogInformation("Deleting task with ID: {TaskId}", id);
+                var command = new DeleteTaskCommand(id, _repository);
+                await _commandInvoker.ExecuteCommand(command);
+                
+                _logger.LogInformation("Task deleted successfully: {TaskId}", id);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Failed to delete task with ID: {TaskId}", id);
+                return NotFound(ex.Message);
+            }
+        }
+        
+        [HttpPost("undo")]
+        public async Task<IActionResult> Undo()
+        {
+            try {
+                _logger.LogInformation("Attempting to undo the last operation");
+                var success = await _commandInvoker.UndoCommand();
+                
+                if (!success)
+                {
+                    _logger.LogInformation("Nothing to undo");
+                    return BadRequest("Nothing to undo");
+                }
+                
+                _logger.LogInformation("Operation undone successfully");
+                return Ok(new { message = "Action undone successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during undo operation");
+                return StatusCode(500, "An error occurred while undoing the operation");
+            }
+        }
+        
+        [HttpPost("redo")]
+        public async Task<IActionResult> Redo()
+        {
+            try {
+                _logger.LogInformation("Attempting to redo the last undone operation");
+                var success = await _commandInvoker.RedoCommand();
+                
+                if (!success)
+                {
+                    _logger.LogInformation("Nothing to redo");
+                    return BadRequest("Nothing to redo");
+                }
+                
+                _logger.LogInformation("Operation redone successfully");
+                return Ok(new { message = "Action redone successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during redo operation");
+                return StatusCode(500, "An error occurred while redoing the operation");
+            }
         }
     }
-        
-    
 }

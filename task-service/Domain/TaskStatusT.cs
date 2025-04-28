@@ -6,6 +6,7 @@ namespace task_service.Domain
         ToDo,
         InProgress,
         Done,
-        Cancelled
+        Cancelled,
+        Completed,
     }
 }

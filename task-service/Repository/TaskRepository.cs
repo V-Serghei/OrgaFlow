@@ -7,7 +7,7 @@ using task_service.Domain;
 
 namespace task_service.Repository;
 
-public class TaskRepository
+public class TaskRepository: ITaskRepository
 {
     private readonly TaskDbContext _context;
 
@@ -250,4 +250,73 @@ public class TaskRepository
 
         return rootTasks;
     }
+    public async Task<IEnumerable<ETask>> GetAllAsync()
+    {
+        return await GetAllTasks(CancellationToken.None);
+    }
+
+    public async Task<ETask> GetByIdAsync(int id)
+    {
+        var task = await GetTaskDataById(id, CancellationToken.None);
+        if (task == null)
+            throw new KeyNotFoundException($"Task with ID {id} not found");
+        return task;
+    }
+
+    public async Task<ETask> AddAsync(ETask task)
+    {
+        return await AddTask(task, CancellationToken.None);
+    }
+
+    public async Task<ETask> UpdateAsync(ETask task)
+    {
+        var updatedTask = await UpdateTask(task, CancellationToken.None);
+        if (updatedTask == null)
+            throw new KeyNotFoundException($"Task with ID {task.Id} not found");
+        return updatedTask;
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        bool result = await DeleteTask(id, CancellationToken.None);
+        if (!result)
+            throw new KeyNotFoundException($"Task with ID {id} not found");
+    }
+
+    public async Task<IEnumerable<ETask>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
+    {
+        var tasks = await GetAllTasks(CancellationToken.None);
+        
+        // Apply notification filter if specified
+        if (notificationsEnabled.HasValue)
+        {
+            tasks = tasks.Where(t => t.Notify == notificationsEnabled.Value).ToList();
+        }
+        
+        // Apply sorting based on strategy
+        return sortBy?.ToLower() switch
+        {
+            "newest" => tasks.OrderByDescending(t => t.StartDate),
+            "oldest" => tasks.OrderBy(t => t.StartDate),
+            "priority" => tasks.OrderByDescending(t => t.Importance),
+            "name" => tasks.OrderBy(t => t.Name),
+            "deadline" => tasks.OrderBy(t => t.EndDate),
+            _ => tasks.OrderByDescending(t => t.StartDate) // Default to newest
+        };
+    }
+
+    public async Task<IEnumerable<ETask>> GetTasksDueWithinHoursAsync(int hours)
+    {
+        var tasks = await GetAllTasks(CancellationToken.None);
+        var cutoffTime = DateTime.UtcNow.AddHours(hours);
+        return tasks.Where(t => t.EndDate <= cutoffTime && t.Status != TaskStatusT.Completed);
+    }
+
+    public async Task<IEnumerable<ETask>> GetOverdueTasksAsync()
+    {
+        var tasks = await GetAllTasks(CancellationToken.None);
+        var now = DateTime.UtcNow;
+        return tasks.Where(t => t.EndDate < now && t.Status != TaskStatusT.Completed);
+    }
+    
 }

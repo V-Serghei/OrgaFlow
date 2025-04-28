@@ -4,5 +4,6 @@ public enum TaskImportance
 {
     Low,
     Medium,
-    High
+    High,
+    Critical
 }

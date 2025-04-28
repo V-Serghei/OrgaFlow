@@ -2,6 +2,7 @@ using OrgaFlow.Domain.Entities.EntitiesTask;
 using OrgaFlow.Persistence.Configuration;
 using task_service.Domain;
 using Mapster;
+using TaskImportance = task_service.Domain.TaskImportance;
 
 namespace task_service.Mapping;
 
@@ -30,5 +31,36 @@ public class MappingConfig
             .Map(dest => dest, src => src);
         TypeAdapterConfig<ETask, TaskDto>.NewConfig()
             .Map(dest => dest, src => src);
+        
+        TypeAdapterConfig<TaskDto, ETask>.NewConfig()
+            .Map(dest => dest.Importance, src => MapImportanceFromString(src.Priority))
+            .Map(dest => dest.Status, src => src.Status);
+            
+        TypeAdapterConfig<ETask, TaskDto>.NewConfig()
+            .Map(dest => dest.Priority, src => MapImportanceToString(src.Importance))
+            .Map(dest => dest.Status, src => src.Status);
+    }
+    private static TaskImportance MapImportanceFromString(string priority)
+    {
+        return priority?.ToLower() switch
+        {
+            "low" => TaskImportance.Low,
+            "medium" => TaskImportance.Medium,
+            "high" => TaskImportance.High,
+            "critical" => TaskImportance.Critical,
+            _ => TaskImportance.Medium
+        };
+    }
+    
+    private static string MapImportanceToString(TaskImportance importance)
+    {
+        return importance switch
+        {
+            TaskImportance.Low => "low",
+            TaskImportance.Medium => "medium",
+            TaskImportance.High => "high",
+            TaskImportance.Critical => "critical",
+            _ => "medium"
+        };
     }
 }

@@ -2,6 +2,8 @@ using Mapster;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using OrgaFlow.Persistence.Configuration;
+using task_service.Commands;
+using task_service.Domain;
 using task_service.Mapping;
 using task_service.Repository;
 using task_service.Sorting;
@@ -25,16 +27,21 @@ builder.Services
 builder.Services.AddSingleton(TypeAdapterConfig.GlobalSettings);
 builder.Services.AddScoped<IMapper, Mapper>();
 
+// Register Repository implementations
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+
+// Register Command Pattern components
+builder.Services.AddSingleton<CommandInvoker>();
+builder.Services.AddScoped<TaskCommandFactory>();
+
+// Register application constants
 
 
-builder.Services.AddScoped<TaskRepository>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// Add this to your existing Program.cs file where services are configured
 
 // Register all sorting strategies
 builder.Services.AddScoped<ISortStrategy, NewestFirstStrategy>();
@@ -63,3 +70,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
