@@ -6,9 +6,9 @@ namespace task_service.Application.Tasks.Commands.Handlers;
 
 public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, ETask>
 {
-    private readonly TaskRepository _repository;
+    private readonly ITaskRepository _repository;
 
-    public CreateTaskCommandHandler(TaskRepository repository)
+    public CreateTaskCommandHandler(ITaskRepository repository)
     {
         _repository = repository;
     }

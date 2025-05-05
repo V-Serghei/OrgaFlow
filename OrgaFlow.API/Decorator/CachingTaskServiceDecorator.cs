@@ -1,9 +1,8 @@
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace OrgaFlow.Application.Decorator;
-
-using Microsoft.Extensions.Caching.Memory;
 
 public class CachingTaskServiceDecorator : ITaskService
 {
@@ -68,7 +67,6 @@ public class CachingTaskServiceDecorator : ITaskService
     {
         var createdTask = await _inner.CreateTaskAsync(task);
         _cache.Remove("all_tasks");
-        // Also invalidate any sorted task caches
         RemoveSortedTasksCache();
         return createdTask;
     }
@@ -78,7 +76,6 @@ public class CachingTaskServiceDecorator : ITaskService
         await _inner.UpdateTaskAsync(task);
         _cache.Remove($"task_{task.Id}");
         _cache.Remove("all_tasks");
-        // Also invalidate any sorted task caches
         RemoveSortedTasksCache();
     }
 
@@ -87,14 +84,35 @@ public class CachingTaskServiceDecorator : ITaskService
         await _inner.DeleteTaskAsync(id);
         _cache.Remove($"task_{id}");
         _cache.Remove("all_tasks");
-        // Also invalidate any sorted task caches
         RemoveSortedTasksCache();
+    }
+    
+    public async Task<bool> UndoLastOperationAsync()
+    {
+        var result = await _inner.UndoLastOperationAsync();
+        
+        if (result)
+        {
+            ClearAllTaskCache();
+        }
+        
+        return result;
+    }
+    
+    public async Task<bool> RedoLastOperationAsync()
+    {
+        var result = await _inner.RedoLastOperationAsync();
+        
+        if (result)
+        {
+            ClearAllTaskCache();
+        }
+        
+        return result;
     }
     
     private void RemoveSortedTasksCache()
     {
-        // This is a simple approach; in a real-world scenario, you might want to
-        // use a more sophisticated cache key pattern or cache tags
         var cacheKeys = new[]
         {
             "sorted_tasks_newest_",
@@ -111,5 +129,14 @@ public class CachingTaskServiceDecorator : ITaskService
             _cache.Remove(key + "False");
             _cache.Remove(key + "");
         }
+    }
+    
+    private void ClearAllTaskCache()
+    {
+        _cache.Remove("all_tasks");
+        
+        RemoveSortedTasksCache();
+        
+        _cache.Remove("task_ids");
     }
 }

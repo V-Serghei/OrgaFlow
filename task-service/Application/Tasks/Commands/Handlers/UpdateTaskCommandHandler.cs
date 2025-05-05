@@ -6,9 +6,9 @@ namespace task_service.Application.Tasks.Commands.Handlers;
 
 public class UpdateTaskCommandHandler : IRequestHandler<UpdateTaskCommand, ETask>
 {
-    private readonly TaskRepository _repository;
+    private readonly ITaskRepository _repository;
 
-    public UpdateTaskCommandHandler(TaskRepository repository)
+    public UpdateTaskCommandHandler(ITaskRepository repository)
     {
         _repository = repository;
     }

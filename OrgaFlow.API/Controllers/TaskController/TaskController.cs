@@ -4,10 +4,11 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using OrgaFlow.Application.Controllers.Facade;
+using OrgaFlow.Contracts.Requests.Tasks;
 
 namespace OrgaFlow.Application.Controllers.TaskController
 {
- [ApiController]
+    [ApiController]
     [Route("api/task")]
     public class TaskController : ControllerBase
     {
@@ -44,7 +45,27 @@ namespace OrgaFlow.Application.Controllers.TaskController
                     return Ok(await _facade.GetSortedTasksAsync(sortBy, notificationsEnabled));
                 }
                 
-                // Fall back to normal behavior
+                return Ok(await _facade.GetAllTasksAsync());
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+        [HttpGet("user/{currentUser}")]
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks(
+            [FromRoute] string currentUser,
+            [FromQuery] string sortBy = "newest",
+            [FromQuery] bool? notificationsEnabled = null
+            )
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    return Ok(await _facade.GetSortedTasksUserIdAsync(currentUser, sortBy, notificationsEnabled));
+                }
+                
                 return Ok(await _facade.GetAllTasksAsync());
             }
             catch (UnauthorizedAccessException ex)
@@ -67,11 +88,47 @@ namespace OrgaFlow.Application.Controllers.TaskController
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskDto>> CreateTask([FromBody] TaskDto taskDto)
+        public async Task<ActionResult<TaskDto>> CreateTask([FromBody] TaskRequest taskDto)
         {
             try
             {
-                return Ok(await _facade.CreateTaskAsync(taskDto));
+                var task = new TaskDto(
+                    Id: 0,
+                    Name: taskDto.Name,
+                    Description: taskDto.Description,
+                    Status: taskDto.Status,
+                    Importance: taskDto.Importance,
+                    Type: taskDto.Type,
+                    CreatedAt: DateTime.UtcNow,
+                    CreatedBy: taskDto.CreatedBy,
+                    AssignedTo: taskDto.AssignedTo,
+                    StartDate: taskDto.StartDate,
+                    EndDate: taskDto.EndDate,
+                    StartTime: taskDto.StartTime,
+                    EndTime: taskDto.EndTime,
+                    Location: taskDto.Location,
+                    IsAllDay: taskDto.IsAllDay,
+                    IsRecurring: taskDto.IsRecurring,
+                    RecurrencePattern: taskDto.RecurrencePattern,
+                    Notify: taskDto.Notify,
+                    ParentId: taskDto.ParentId,
+                    Children: new List<TaskDto>(),
+                    Participants: taskDto.Participants.Select(p => new ParticipantDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Avatar = p.Avatar
+                    }).ToList(),
+                    Tags: taskDto.Tags.Select(t => new TagDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Color = t.Color
+                    }).ToList(),
+                    Attachments: new List<AttachmentDto>()
+                );
+
+            return Ok(await _facade.CreateTaskAsync(task));
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -109,6 +166,56 @@ namespace OrgaFlow.Application.Controllers.TaskController
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
+            }
+        }
+        
+        [HttpPost("undo")]
+        public async Task<IActionResult> UndoLastOperation()
+        {
+            try
+            {
+                var result = await _facade.UndoLastOperationAsync();
+                if (result)
+                {
+                    return Ok(new { message = "Операция отменена успешно" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Нет операций для отмены" });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Ошибка при отмене операции", details = ex.Message });
+            }
+        }
+
+        [HttpPost("redo")]
+        public async Task<IActionResult> RedoLastOperation()
+        {
+            try
+            {
+                var result = await _facade.RedoLastOperationAsync();
+                if (result)
+                {
+                    return Ok(new { message = "Операция повторена успешно" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Нет операций для повтора" });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Ошибка при повторе операции", details = ex.Message });
             }
         }
     }

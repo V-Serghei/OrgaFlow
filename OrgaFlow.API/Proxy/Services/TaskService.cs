@@ -56,4 +56,17 @@ public class TaskService : ITaskService
         var res = await _client.DeleteAsync($"{id}");
         res.EnsureSuccessStatusCode();
     }
+    public async Task<bool> UndoLastOperationAsync()
+    {
+        var res = await _client.PostAsync("undo", null);
+        if (!res.IsSuccessStatusCode) return false;
+        return true;
+    }
+
+    public async Task<bool> RedoLastOperationAsync()
+    {
+        var res = await _client.PostAsync("redo", null);
+        if (!res.IsSuccessStatusCode) return false;
+        return true;
+    }
 }

@@ -10,4 +10,6 @@ public interface ITaskService
     Task<TaskDto> CreateTaskAsync(TaskDto task);
     Task UpdateTaskAsync(TaskDto task);
     Task DeleteTaskAsync(int id);
+    Task<bool> UndoLastOperationAsync();
+    Task<bool> RedoLastOperationAsync();
 }

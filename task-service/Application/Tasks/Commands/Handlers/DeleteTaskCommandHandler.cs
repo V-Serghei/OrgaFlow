@@ -4,9 +4,9 @@ using task_service.Repository;
 namespace task_service.Application.Tasks.Commands.Handlers;
 public class DeleteTaskCommandHandler : IRequestHandler<DeleteTaskCommand, bool>
 {
-    private readonly TaskRepository _repository;
+    private readonly ITaskRepository _repository;
 
-    public DeleteTaskCommandHandler(TaskRepository repository)
+    public DeleteTaskCommandHandler(ITaskRepository repository)
     {
         _repository = repository;
     }

@@ -1,6 +1,6 @@
-namespace task_service.Domain;
+namespace OrgaFlow.Contracts.DTO;
 
-public class TaskAttachment
+public class AttachmentDto
 {
     public int Id { get; set; }
     public string FileName { get; set; } = string.Empty;

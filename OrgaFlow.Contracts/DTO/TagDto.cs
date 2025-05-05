@@ -1,10 +1,8 @@
-namespace task_service.Domain;
+namespace OrgaFlow.Contracts.DTO;
 
 public class TagDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string? Color { get; set; }
-    public int TaskId { get; set; }
-
+    public string Color { get; set; } = string.Empty;
 }

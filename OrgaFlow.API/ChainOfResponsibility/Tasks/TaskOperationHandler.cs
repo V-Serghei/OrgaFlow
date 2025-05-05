@@ -81,7 +81,15 @@ public class TaskOperationHandler: BaseRequestHandler<TaskOperationRequest, Task
                         var sortedTasks = await _taskService.GetSortedTasksAsync(context.Request.SortBy, context.Request.NotificationsEnabled);
                         context.Response = new TaskOperationResponse { Tasks = sortedTasks };
                         break;
-                    
+                    case "Undo":
+                        var undoSuccess = await _taskService.UndoLastOperationAsync();
+                        context.Response = new TaskOperationResponse { Success = undoSuccess };
+                        break;
+
+                    case "Redo":
+                        var redoSuccess = await _taskService.RedoLastOperationAsync();
+                        context.Response = new TaskOperationResponse { Success = redoSuccess };
+                        break;
                     default:
                         context.ErrorMessage = $"Unknown operation: {context.Request.Operation}";
                         context.ErrorCode = "UNKNOWN_OPERATION";

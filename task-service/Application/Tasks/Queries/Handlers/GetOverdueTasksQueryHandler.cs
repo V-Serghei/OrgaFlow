@@ -7,10 +7,10 @@ namespace task_service.Application.Tasks.Queries.Handlers;
 
 public class GetOverdueTasksQueryHandler : IRequestHandler<GetOverdueTasksQuery, IEnumerable<TaskDto>>
 {
-    private readonly TaskRepository _repo;
+    private readonly ITaskRepository _repo;
     private readonly IMapper _mapper;
 
-    public GetOverdueTasksQueryHandler(TaskRepository repo, IMapper mapper)
+    public GetOverdueTasksQueryHandler(ITaskRepository repo, IMapper mapper)
     {
         _repo = repo;
         _mapper = mapper;

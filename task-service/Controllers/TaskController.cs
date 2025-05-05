@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using Mapster;
 using task_service.Application.Tasks.Queries;
 using task_service.Commands;
+using task_service.Contracts;
 using task_service.Domain;
 using task_service.Repository;
 using task_service.Sorting;
@@ -59,7 +60,6 @@ namespace task_service.Controllers
         {
             try
             {
-                // Handle special queries first
                 if (dueSoon.HasValue)
                 {
                     _logger.LogInformation("Getting tasks due within {Hours} hours", dueSoon.Value);
@@ -74,7 +74,6 @@ namespace task_service.Controllers
                     return Ok(tasks);
                 }
 
-                // Use the sorting strategy pattern for normal queries
                 _logger.LogInformation("Getting tasks with sort strategy: {Strategy}", sortBy);
                 var sortedTasks = await _repository.GetSortedTasksAsync(sortBy, notificationsEnabled);
                 return Ok(sortedTasks);
@@ -92,17 +91,51 @@ namespace task_service.Controllers
             return Ok(_sortContext.GetAvailableSortingStrategies());
         }
 
-        // Updated endpoints using Command pattern
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] ETask task)
+        public async Task<IActionResult> CreateTask([FromBody] TaskRequest task)
         {
             try
             {
                 _logger.LogInformation("Creating new task: {TaskName}", task.Name);
                 
-                // Set default values for current user and time
-                task.CreatedBy = "V-Serghei"; // Current user
-                task.CreatedAt = DateTime.UtcNow; // Current time
+                var taskDto = new TaskDto{
+                    Id = 0,
+                    Name = task.Name,
+                    Description = task.Description,
+                    StartDate = task.StartDate,
+                    EndDate = task.EndDate,
+                    StartTime = task.StartTime,
+                    EndTime = task.EndTime,
+                    Location = task.Location,
+                    IsAllDay = task.IsAllDay,
+                    IsRecurring = task.IsRecurring,
+                    RecurrencePattern = task.RecurrencePattern,
+                    Notify = task.Notify,
+                    Status = task.Status,
+                    Importance = task.Importance,
+                    Type = task.Type,
+                    AssignedTo = task.AssignedTo,
+                    ParentId = task.ParentId,
+                    
+                    CreatedAt = task.CreatedAt,
+                    CreatedBy = task.CreatedBy,
+                    
+                    
+                    
+                    
+                };
+                taskDto.Participants = task.Participants.Select(p => new ParticipantDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Avatar = p.Avatar
+                }).ToList();
+                taskDto.Tags = task.Tags.Select(t => new TagDto
+                {
+                    Id = t.Id,
+                    Name = t.Name,
+                    Color = t.Color
+                }).ToList();
                 
                 var command = new CreateTaskCommand(task.Adapt<TaskDto>(), _repository);
                 var result = await _commandInvoker.ExecuteCommand(command);

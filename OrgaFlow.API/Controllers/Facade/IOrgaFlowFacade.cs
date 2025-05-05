@@ -24,10 +24,15 @@ public interface IOrgaFlowFacade
     Task UpdateTaskAsync(int id, TaskDto dto);
     Task DeleteTaskAsync(int id);
     Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null);
+    Task<IEnumerable<TaskDto>> GetSortedTasksUserIdAsync(string userId, string sortBy, bool? notificationsEnabled);
+
     
     // Email Facade
     Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth);
     Task SendEmailAsync(EmailSendRequestVm request);
     Task TrashEmailsAsync(EmailActionVmRequest request);
     Task<EmailMessageDetailVm?> GetMessageDetailsAsync(string uid, EmailAuthVmRequest auth);
+    
+    Task<bool> UndoLastOperationAsync();
+    Task<bool> RedoLastOperationAsync();
 }

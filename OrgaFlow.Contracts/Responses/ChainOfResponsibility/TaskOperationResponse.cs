@@ -6,4 +6,5 @@ public class TaskOperationResponse
 {
     public IEnumerable<TaskDto> Tasks { get; set; }
     public TaskDto Task { get; set; }
+    public bool? Success { get; set; }
 }

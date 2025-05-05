@@ -6,5 +6,4 @@ public class TaskParticipant
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public int TaskId { get; set; }
-    public ETask Task { get; set; } = null!;
 }

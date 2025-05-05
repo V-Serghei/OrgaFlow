@@ -51,4 +51,15 @@ public class TaskServiceProxy : ITaskService
         EnsureAuthenticated();
         await _realService.DeleteTaskAsync(id);
     }
+    public async Task<bool> UndoLastOperationAsync()
+    {
+        EnsureAuthenticated();
+        return await _realService.UndoLastOperationAsync();
+    }
+
+    public async Task<bool> RedoLastOperationAsync()
+    {
+        EnsureAuthenticated();
+        return await _realService.RedoLastOperationAsync();
+    }
 }

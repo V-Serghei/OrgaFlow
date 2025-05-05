@@ -6,5 +6,4 @@ public class TaskTag
     public string Name { get; set; } = string.Empty;
     public string Color { get; set; } = string.Empty;
     public int TaskId { get; set; }
-    public ETask Task { get; set; } = null!;
 }

@@ -21,13 +21,24 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useParentTasks } from "@/lib/hooks/useParentTasks"
 
 export default function NewTask() {
     const router = useRouter()
     const { toast } = useToast()
     const currentDate = new Date('2025-04-25T12:49:55Z')
     const currentUser = 'V-Serghei'
-
+    
+    const { parentTasks, loading: loadingParentTasks, error: parentTasksError } = useParentTasks();
+    if (parentTasksError && !toast.isActive('parent-tasks-error')) {
+        toast({
+            id: 'parent-tasks-error',
+            title: "Ошибка загрузки",
+            description: "Не удалось загрузить список доступных задач",
+            variant: "destructive",
+        });
+    }
+    
     const [task, setTask] = useState({
         name: "",
         description: "",
@@ -44,7 +55,6 @@ export default function NewTask() {
         participants: [],
         assignedTo: currentUser,
         tags: [],
-        attachments: [],
         status: 0, // 0 = To Do, 1 = Completed, 2 = In Progress
         parentId: null,
         notify: false,
@@ -73,33 +83,60 @@ export default function NewTask() {
     const [isSaving, setIsSaving] = useState(false)
     const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
+    const importanceMap: Record<string, number> = {
+        low: 0, medium: 1, high: 2, critical: 3
+    };
+
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        setIsSaving(true)
+        e.preventDefault();
+        setIsSaving(true);
 
         try {
+            const isoStart = task.startDate
+                ? task.startDate.toISOString()
+                : new Date().toISOString();
+
+            // Если у вас нет endDate, сделаем равным startDate
+            const isoEnd = task.endDate
+                ? task.endDate.toISOString()
+                : isoStart;
+
             const taskData = {
                 name: task.name,
                 description: task.description,
                 type: task.type,
-                priority: task.priority,
-                startDate: task.startDate ? format(task.startDate, "yyyy-MM-dd") : null,
-                endDate: task.endDate ? format(task.endDate, "yyyy-MM-dd") : null,
-                startTime: task.isAllDay ? null : task.startTime,
-                endTime: task.isAllDay ? null : task.endTime,
-                location: task.location || null,
-                isAllDay: task.isAllDay,
+                importance: importanceMap[task.priority] ?? 1,
+                status: task.status,          // assuming enum order matches
+                startDate: isoStart,          // полный ISO-тайм
+                endDate:   isoEnd,            // полный ISO-тайм, не null
+                startTime: task.isAllDay ? "" : task.startTime,
+                endTime:   task.isAllDay ? "" : task.endTime,
+                location:  task.location || "",
+                isAllDay:  task.isAllDay,
                 isRecurring: task.isRecurring,
-                recurrencePattern: task.isRecurring ? task.recurrencePattern : null,
-                participants: task.participants,
+                recurrencePattern: task.isRecurring
+                    ? task.recurrencePattern
+                    : "",
+                notify:    task.notify,
                 assignedTo: task.assignedTo,
-                tags: task.tags,
-                status: task.status,
-                parentId: task.parentId,
-                notify: task.notify,
                 createdBy: currentUser,
                 createdAt: new Date().toISOString(),
-            }
+                parentId:  task.parentId,
+
+                participants: task.participants.map(p => ({
+                    id:     p.id,
+                    name:   p.name,
+                    avatar: p.avatar
+                })),
+
+                tags: task.tags.map(t => ({
+                    id:    t.id,
+                    name:  t.name,
+                    color: t.color
+                })),
+
+            };
+
 
             const response = await api.post("/", taskData)
 
@@ -123,7 +160,6 @@ export default function NewTask() {
 
     const handleAddTag = () => {
         if (newTag.trim() && !task.tags.some(tag => tag.name === newTag.trim())) {
-            // Get a random color for the new tag
             const colors = [
                 "bg-blue-100 text-blue-800",
                 "bg-green-100 text-green-800",
@@ -180,7 +216,6 @@ export default function NewTask() {
         });
     };
 
-    // Render task type icon
     const getTaskTypeIcon = () => {
         switch (task.type) {
             case 'meeting':
@@ -677,7 +712,6 @@ export default function NewTask() {
 
                                     {showAdvancedOptions && (
                                         <div className="space-y-4 p-4 border rounded-md mt-2">
-                                            {/* Parent Task (Implementation needed) */}
                                             <div className="space-y-2">
                                                 <Label htmlFor="parentId">Parent Task</Label>
                                                 <Select
@@ -688,16 +722,45 @@ export default function NewTask() {
                                                     })}
                                                 >
                                                     <SelectTrigger id="parentId">
-                                                        <SelectValue placeholder="Select parent task" />
+                                                        <SelectValue
+                                                            placeholder={loadingParentTasks ? "Loading tasks..." : "Select parent task"}
+                                                        />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="null">No parent (top-level task)</SelectItem>
-                                                        {/* В реальной системе здесь был бы запрос к API */}
-                                                        <SelectItem value="1">OrgaFlow Sprint Planning</SelectItem>
-                                                        <SelectItem value="2">Authentication Module</SelectItem>
-                                                        <SelectItem value="3">Client Dashboard Integration</SelectItem>
+
+                                                        {loadingParentTasks && (
+                                                            <div className="flex justify-center py-2 text-sm text-muted-foreground">
+                                                                Loading available tasks...
+                                                            </div>
+                                                        )}
+
+                                                        {!loadingParentTasks && parentTasks.map(parentTask => (
+                                                            <SelectItem key={parentTask.id} value={parentTask.id.toString()}>
+                                                                <div className="flex items-center">
+                                                                    {parentTask.type === 'meeting' && <Users className="h-4 w-4 mr-2 text-blue-500" />}
+                                                                    {parentTask.type === 'deadline' && <AlertCircle className="h-4 w-4 mr-2 text-red-500" />}
+                                                                    {parentTask.type === 'presentation' && <div className="mr-2 text-amber-500">📊</div>}
+                                                                    {parentTask.type === 'personal' && <div className="mr-2 text-purple-500">🌱</div>}
+                                                                    {(parentTask.type === 'task' || !parentTask.type) && <div className="mr-2 text-green-500">✓</div>}
+                                                                    {parentTask.name}
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+
+                                                        {!loadingParentTasks && parentTasks.length === 0 && (
+                                                            <div className="py-2 px-2 text-sm text-muted-foreground">
+                                                                No active tasks available
+                                                            </div>
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
+
+                                                {loadingParentTasks && (
+                                                    <p className="text-xs text-muted-foreground mt-1">
+                                                        Загрузка доступных задач...
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -711,7 +774,6 @@ export default function NewTask() {
                             </CardHeader>
                             <CardContent>
                                 <div className="rounded-md border p-4">
-                                    {/* Priority badge */}
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             {getTaskTypeIcon()}

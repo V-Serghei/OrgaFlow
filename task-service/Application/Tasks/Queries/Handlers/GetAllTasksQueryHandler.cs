@@ -7,9 +7,9 @@ namespace task_service.Application.Tasks.Queries.Handlers;
 
 public class GetAllTasksQueryHandler : IRequestHandler<GetAllTasksQuery, IEnumerable<TaskDto>>
 {
-    private readonly TaskRepository _repository;
+    private readonly ITaskRepository _repository;
 
-    public GetAllTasksQueryHandler(TaskRepository repository)
+    public GetAllTasksQueryHandler(ITaskRepository repository)
     {
         _repository = repository;
     }

@@ -185,6 +185,11 @@ public class OrgaFlowFacade : IOrgaFlowFacade
         throw new NotImplementedException();
     }
 
+    public Task<IEnumerable<TaskDto>> GetSortedTasksUserIdAsync(string userId, string sortBy, bool? notificationsEnabled)
+    {
+        throw new NotImplementedException();
+    }
+
     // ---------------- EMAIL ----------------
     public Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth) => _emailService.GetInboxAsync(auth);
 
@@ -195,4 +200,13 @@ public class OrgaFlowFacade : IOrgaFlowFacade
     public Task<EmailMessageDetailVm?> GetMessageDetailsAsync(string uid, EmailAuthVmRequest auth) =>
         _emailService.GetEmailDetailsAsync(uid, auth);
 
+    public Task<bool> UndoLastOperationAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> RedoLastOperationAsync()
+    {
+        throw new NotImplementedException();
+    }
 }

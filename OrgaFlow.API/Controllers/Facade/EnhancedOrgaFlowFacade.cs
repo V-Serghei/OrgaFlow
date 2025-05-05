@@ -250,7 +250,27 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
     
         return result.Response.Tasks ?? Array.Empty<TaskDto>();
     }
+
+    public async Task<IEnumerable<TaskDto>> GetSortedTasksUserIdAsync(string userId, string sortBy, bool? notificationsEnabled)
+    {
+        var request = new TaskOperationRequest
+        {
+            Operation = "GetSorted",
+            SortBy = sortBy,
+            NotificationsEnabled = notificationsEnabled,
+            UserId = userId
+        };
     
+        var result = await _chainManager.ProcessTaskRequest(request, "GetSortedTasks");
+    
+        if (!result.IsSuccessful)
+        {
+            throw new UnauthorizedAccessException(result.ErrorMessage);
+        }
+    
+        return result.Response.Tasks ?? Array.Empty<TaskDto>();
+    }
+
     // ---------------- EMAIL ----------------
     public async Task<List<EmailMessageVm>> GetInboxAsync(EmailAuthVmRequest auth)
     {
@@ -331,5 +351,38 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             Expires = DateTime.UtcNow.AddDays(30),
         };
         response.Cookies.Append("AuthToken", token, cookieOptions);
+    }
+    public async Task<bool> UndoLastOperationAsync()
+    {
+        var request = new TaskOperationRequest
+        {
+            Operation = "Undo"
+        };
+    
+        var result = await _chainManager.ProcessTaskRequest(request, "UndoTask");
+    
+        if (!result.IsSuccessful)
+        {
+            throw new UnauthorizedAccessException(result.ErrorMessage);
+        }
+    
+        return result.Response.Success ?? false;
+    }
+
+    public async Task<bool> RedoLastOperationAsync()
+    {
+        var request = new TaskOperationRequest
+        {
+            Operation = "Redo"
+        };
+    
+        var result = await _chainManager.ProcessTaskRequest(request, "RedoTask");
+    
+        if (!result.IsSuccessful)
+        {
+            throw new UnauthorizedAccessException(result.ErrorMessage);
+        }
+    
+        return result.Response.Success ?? false;
     }
 }
