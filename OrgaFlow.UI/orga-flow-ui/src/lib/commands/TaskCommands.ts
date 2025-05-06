@@ -8,7 +8,7 @@ export class CreateTaskCommand implements ICommand {
 
     async execute(): Promise<any> {
         try {
-            const response = await api.post('/task', this.taskData);
+            const response = await api.post('/', this.taskData);
             this.createdTaskId = response.data.id;
             return response.data;
         } catch (error) {
@@ -21,7 +21,7 @@ export class CreateTaskCommand implements ICommand {
         if (!this.createdTaskId) return false;
 
         try {
-            await api.post(`/task/undo`);
+            await api.post(`/undo`);
             return true;
         } catch (error) {
             console.error('Ошибка при отмене создания задачи:', error);
@@ -37,10 +37,10 @@ export class UpdateTaskCommand implements ICommand {
 
     async execute(): Promise<any> {
         try {
-            const getResponse = await api.get(`/task/${this.id}`);
+            const getResponse = await api.get(`/${this.id}`);
             this.originalTask = getResponse.data;
 
-            const response = await api.put(`/task/${this.id}`, this.taskData);
+            const response = await api.put(`/${this.id}`, this.taskData);
             return response.data;
         } catch (error) {
             console.error('Ошибка при обновлении задачи:', error);
@@ -50,7 +50,7 @@ export class UpdateTaskCommand implements ICommand {
 
     async undo(): Promise<boolean> {
         try {
-            await api.post(`/task/undo`);
+            await api.post(`/undo`);
             return true;
         } catch (error) {
             console.error('Ошибка при отмене обновления задачи:', error);
@@ -60,7 +60,7 @@ export class UpdateTaskCommand implements ICommand {
 
     async redo(): Promise<any> {
         try {
-            return await api.put(`/task/${this.id}`, this.taskData);
+            return await api.put(`/${this.id}`, this.taskData);
         } catch (error) {
             console.error('Ошибка при повторе обновления задачи:', error);
             throw error;
@@ -75,10 +75,10 @@ export class DeleteTaskCommand implements ICommand {
 
     async execute(): Promise<any> {
         try {
-            const getResponse = await api.get(`/task/${this.id}`);
+            const getResponse = await api.get(`/${this.id}`);
             this.deletedTask = getResponse.data;
 
-            const response = await api.delete(`/task/${this.id}`);
+            const response = await api.delete(`/${this.id}`);
             return response.data;
         } catch (error) {
             console.error('Ошибка при удалении задачи:', error);
@@ -88,7 +88,7 @@ export class DeleteTaskCommand implements ICommand {
 
     async undo(): Promise<boolean> {
         try {
-            await api.post(`/task/undo`);
+            await api.post(`/undo`);
             return true;
         } catch (error) {
             console.error('Ошибка при отмене удаления задачи:', error);

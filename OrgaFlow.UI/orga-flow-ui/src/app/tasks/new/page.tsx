@@ -22,12 +22,18 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useParentTasks } from "@/lib/hooks/useParentTasks"
-
+import { CommandBar } from "@/components/CommandBar"
+import { useCommandInvoker } from "@/lib/hooks/useCommandInvoker"
+import { TaskCommandFactory } from "@/lib/commands/TaskCommandFactory"
 export default function NewTask() {
     const router = useRouter()
     const { toast } = useToast()
-    const currentDate = new Date('2025-04-25T12:49:55Z')
+    const currentDate =  new Date("2023-10-01T09:00:00Z")
     const currentUser = 'V-Serghei'
+    
+    const { executeCommand } = useCommandInvoker();
+    const commandFactory = new TaskCommandFactory();
+    
     
     const { parentTasks, loading: loadingParentTasks, error: parentTasksError } = useParentTasks();
     if (parentTasksError && !toast.isActive('parent-tasks-error')) {
@@ -60,7 +66,6 @@ export default function NewTask() {
         notify: false,
     })
 
-    // Список возможных участников (в реальной системе это будет приходить из API)
     const availableParticipants = [
         { id: 1, name: "Serghei V.", avatar: "/avatars/serghei.png" },
         { id: 2, name: "Alex K.", avatar: "/avatars/alex.png" },
@@ -69,7 +74,6 @@ export default function NewTask() {
         { id: 5, name: "Client Team", avatar: "/avatars/client.png" },
     ]
 
-    // Список доступных тегов
     const availableTags = [
         { id: 1, name: "Frontend", color: "bg-blue-100 text-blue-800" },
         { id: 2, name: "Backend", color: "bg-green-100 text-green-800" },
@@ -96,7 +100,6 @@ export default function NewTask() {
                 ? task.startDate.toISOString()
                 : new Date().toISOString();
 
-            // Если у вас нет endDate, сделаем равным startDate
             const isoEnd = task.endDate
                 ? task.endDate.toISOString()
                 : isoStart;
@@ -106,9 +109,9 @@ export default function NewTask() {
                 description: task.description,
                 type: task.type,
                 importance: importanceMap[task.priority] ?? 1,
-                status: task.status,          // assuming enum order matches
-                startDate: isoStart,          // полный ISO-тайм
-                endDate:   isoEnd,            // полный ISO-тайм, не null
+                status: task.status,          
+                startDate: isoStart,          
+                endDate:   isoEnd,            
                 startTime: task.isAllDay ? "" : task.startTime,
                 endTime:   task.isAllDay ? "" : task.endTime,
                 location:  task.location || "",
@@ -137,8 +140,9 @@ export default function NewTask() {
 
             };
 
-
-            const response = await api.post("/", taskData)
+            const createCommand = commandFactory.createCreateCommand(taskData);
+            const response = await executeCommand(createCommand);
+            //const response = await api.post("/", taskData)
 
             toast({
                 title: "Task Created",
@@ -234,14 +238,17 @@ export default function NewTask() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between">
                 <Button variant="ghost" size="sm" asChild>
                     <Link href="/tasks">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Tasks
                     </Link>
                 </Button>
+
+                <CommandBar />
             </div>
+            
 
             <form onSubmit={handleSubmit}>
                 <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
@@ -879,6 +886,17 @@ export default function NewTask() {
                             </Button>
                             <Button type="submit" disabled={isSaving}>
                                 {isSaving ? "Creating..." : "Create Task"}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        {/* ... */}
+                        <div className="flex justify-end space-x-2">
+                            <Button variant="outline" type="button" onClick={() => router.push("/tasks")}>
+                                Отмена
+                            </Button>
+                            <Button type="submit" disabled={isSaving}>
+                                {isSaving ? "Создание..." : "Создать задачу"}
                             </Button>
                         </div>
                     </div>
