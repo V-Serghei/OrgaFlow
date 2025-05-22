@@ -7,7 +7,7 @@ public class DeleteTaskCommand : ICommand, IRequiresDependencies
 {
     private readonly int _taskId;
     private ITaskRepository _repository;
-    private IEnumerable<ETask> _deletedTasks; // Храним поддерево задач
+    private IEnumerable<ETask> _deletedTasks;
 
     public DeleteTaskCommand(int taskId, ITaskRepository repository)
     {
@@ -31,10 +31,8 @@ public class DeleteTaskCommand : ICommand, IRequiresDependencies
             throw new InvalidOperationException(
                 $"Cannot execute delete task command. Task with ID {_taskId} not found or already deleted.");
 
-        // Сохраняем поддерево задач перед удалением
         _deletedTasks = await _repository.GetTaskSubtreeAsync(_taskId);
 
-        // Выполняем мягкое удаление
         await _repository.SoftDeleteAsync(_taskId);
         return true;
     }
@@ -43,7 +41,6 @@ public class DeleteTaskCommand : ICommand, IRequiresDependencies
     {
         if (_deletedTasks.Any())
         {
-            // Восстанавливаем все задачи поддерева
             foreach (var task in _deletedTasks)
             {
                 await _repository.RestoreAsync(task.Id);

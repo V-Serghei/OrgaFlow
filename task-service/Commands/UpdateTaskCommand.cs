@@ -33,10 +33,8 @@ public class UpdateTaskCommand : ICommand, IRequiresDependencies
             throw new InvalidOperationException(
                 $"Cannot execute update task command. Task with ID {_taskDto.Id} not found.");
 
-        // Store original task for potential undo
         _originalTask = await _repository.GetByIdAsync(_taskDto.Id);
 
-        // Create a deep copy of the original task
         var originalTaskCopy = new ETask
         {
             Id = _originalTask.Id,
@@ -60,7 +58,6 @@ public class UpdateTaskCommand : ICommand, IRequiresDependencies
             CreatedAt = _originalTask.CreatedAt
         };
 
-        // Update task with new values
         _originalTask.Name = _taskDto.Name;
         _originalTask.Description = _taskDto.Description;
         _originalTask.Status = _taskDto.Status;
@@ -78,7 +75,6 @@ public class UpdateTaskCommand : ICommand, IRequiresDependencies
         _originalTask.RecurrencePattern = _taskDto.RecurrencePattern ?? "weekly";
         _originalTask.AssignedTo = _taskDto.AssignedTo ?? string.Empty;
 
-        // Update participants
         _originalTask.Participants.Clear();
         if (_taskDto.Participants != null)
         {
@@ -93,7 +89,6 @@ public class UpdateTaskCommand : ICommand, IRequiresDependencies
             }
         }
 
-        // Update tags
         _originalTask.Tags.Clear();
         if (_taskDto.Tags != null)
         {

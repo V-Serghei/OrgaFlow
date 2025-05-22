@@ -21,10 +21,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { formatISO } from "date-fns"
 
-// Исправлено: добавлены импорты
 import React from "react"
 
-// Flatten task hierarchy for parent selection dropdown
 const flattenTasks = (tasks, result = []) => {
     tasks.forEach(task => {
         result.push(task);
@@ -50,7 +48,6 @@ export function TaskForm({ task, onSave, allTasks = [] }) {
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // Flatten tasks for parent selection, excluding the current task
     const flattenedTasks = flattenTasks(allTasks)
         .filter(t => !task || t.id !== task.id);
 
@@ -109,7 +106,6 @@ export function TaskForm({ task, onSave, allTasks = [] }) {
             }
             onSave()
 
-            // Reset form if not editing
             if (!task) {
                 setFormData({
                     id: 0,

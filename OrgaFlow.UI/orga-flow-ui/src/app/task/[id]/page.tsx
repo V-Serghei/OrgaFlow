@@ -51,7 +51,6 @@ export default function TaskDetail() {
         try {
             if (!dateString) return "Неизвестно";
 
-            // Отладочная информация
             console.log("Форматируемая дата:", dateString, typeof dateString);
 
             const date = new Date(dateString);
@@ -127,11 +126,44 @@ export default function TaskDetail() {
 
     const handleComplete = async () => {
         try {
-            const updatedTask = { ...task, status: task.status === 1 ? 0 : 1 };
-            const updateCommand = commandFactory.createUpdateCommand(Number(id), updatedTask);
+            const updatedTaskData = {
+                Name: task.name,
+                Description: task.description,
+                Status: task.status === 1 ? 0 : 1, 
+                Importance: task.importance,
+                Type: task.type,
+                StartDate: task.startDate,
+                EndDate: task.endDate,
+                StartTime: task.startTime,
+                EndTime: task.endTime,
+                Location: task.location || "",
+                IsAllDay: task.isAllDay,
+                IsRecurring: task.isRecurring,
+                RecurrencePattern: task.recurrencePattern || "",
+                Notify: task.notify,
+                AssignedTo: task.assignedTo,
+                UpdatedBy: currentUser, 
+                UpdatedAt: new Date().toISOString(),
+                ParentId: task.parentId,
+                Participants: task.participants?.map(p => ({
+                    Id: p.id,
+                    Name: p.name,
+                    Avatar: p.avatar
+                })) || [],
+                Tags: task.tags?.map(t => ({
+                    Id: t.id,
+                    Name: t.name,
+                    Color: t.color
+                })) || []
+            };
+
+            const updateCommand = commandFactory.createUpdateCommand(Number(id), updatedTaskData);
             await executeCommand(updateCommand);
 
-            setTask(updatedTask);
+            setTask({
+                ...task,
+                status: task.status === 1 ? 0 : 1
+            });
 
             toast({
                 title: task.status === 1 ? "Задача помечена как незавершённая" : "Задача завершена",
@@ -292,6 +324,7 @@ export default function TaskDetail() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            
                             {task.tags && task.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
                                     {task.tags.map(tag => (
@@ -352,6 +385,75 @@ export default function TaskDetail() {
                                                 <span className="text-sm">{participant.name}</span>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+                            {task.children && task.children.length > 0 && (
+                                <div className="space-y-2">
+                                    <h3 className="text-sm font-medium">Вложенные задачи ({task.children.length})</h3>
+                                    <div className="space-y-2">
+                                        {task.children.map(childTask => (
+                                            <div
+                                                key={childTask.id}
+                                                className="flex items-center justify-between bg-muted/40 rounded-md px-3 py-2"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant={getStatusBadgeVariant(childTask.status)} className="h-2 w-2 p-0 rounded-full" />
+                                                    <span className="text-sm">{childTask.name}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    {getPriorityBadge(childTask.importance)}
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 ml-2" asChild>
+                                                        <Link href={`/task/${childTask.id}`}>
+                                                            <ArrowUpRight className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {task.children && task.children.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-medium">Вложенные задачи ({task.children.length})</h3>
+                                        <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                                            <Link href={`/tasks?parentId=${task.id}`}>
+                                                Показать все
+                                            </Link>
+                                        </Button>
+                                    </div>
+
+                                    <div className="rounded-md border">
+                                        <div className="divide-y">
+                                            {task.children.map((childTask) => (
+                                                <div key={childTask.id} className="flex items-center justify-between p-3 hover:bg-muted/50">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex h-6 w-6 items-center justify-center">
+                                                            {getTypeIcon(childTask.type)}
+                                                        </div>
+                                                        <div>
+                                                            <Link
+                                                                href={`/task/${childTask.id}`}
+                                                                className="font-medium hover:underline"
+                                                            >
+                                                                {childTask.name}
+                                                            </Link>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {safeFormat(childTask.endDate, "PPP")}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant={getStatusBadgeVariant(childTask.status)}>
+                                                            {getStatusLabel(childTask.status)}
+                                                        </Badge>
+                                                        {getPriorityBadge(childTask.importance)}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             )}

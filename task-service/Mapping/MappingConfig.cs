@@ -119,7 +119,9 @@ public class MappingConfig
             .Map(dest => dest.Type, src => src.Type)
             .Map(dest => dest.Tags, src => src.Tags)
             .Map(dest => dest.Participants, src => src.Participants)
-            .Map(dest => dest.Attachments, src => src.Attachments);
+            .Map(dest => dest.Attachments, src => src.Attachments)
+            .Map(dest => dest.Children, src => src.Children);
+            
             
 
         TypeAdapterConfig<ETask, TaskDto>.NewConfig()
@@ -142,12 +144,10 @@ public class MappingConfig
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
             .Map(dest => dest.ParentId, src => src.ParentId)
             .Map(dest => dest.Type, src => src.Type)
-            // Конфигурация для тегов
             .Map(dest => dest.Tags, src => src.Tags)
-            // Конфигурация для участников
             .Map(dest => dest.Participants, src => src.Participants)
-            // Конфигурация для вложений
-            .Map(dest => dest.Attachments, src => src.Attachments);
+            .Map(dest => dest.Attachments, src => src.Attachments)
+            .Map(dest => dest.Children, src => src.Children);
     }
     
     private static TaskImportance MapImportanceFromString(string priority)

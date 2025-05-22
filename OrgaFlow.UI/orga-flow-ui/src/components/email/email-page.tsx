@@ -15,7 +15,6 @@ import { EmailDetailModal } from "@/components/email/email-detail-modal"
 import { ReplyModal } from "@/components/email/reply-modal"
 import { apiMail } from "@/lib/api-mail"
 
-// Define the email message interface
 interface EmailMessage {
     uid: string
     subject: string
@@ -39,7 +38,6 @@ export default function EmailPage() {
     const [error, setError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState("inbox")
 
-    // Fetch emails on component mount
     useEffect(() => {
         fetchEmails()
     }, [activeTab])
@@ -48,8 +46,6 @@ export default function EmailPage() {
         setIsLoading(true)
         setError(null)
         try {
-            // In a real app, this would use a secure authentication method
-            // and fetch emails from your backend API
             const response = await apiMail.get(`/${activeTab}`)
             setEmails(response.data)
         } catch (err) {
@@ -75,11 +71,9 @@ export default function EmailPage() {
     const handleOpenEmail = async (email: EmailMessage) => {
         setIsLoading(true)
         try {
-            // In a real app, fetch the full email content if needed
             const response = await apiMail.get(`/message/${email.uid}`)
             setViewingEmail(response.data)
 
-            // Mark as read if it wasn't already
             if (!email.read) {
                 await apiMail.post(`/markAsRead`, { uids: [email.uid] })
                 setEmails(emails.map((e) => (e.uid === email.uid ? { ...e, read: true } : e)))
@@ -99,7 +93,6 @@ export default function EmailPage() {
         try {
             await apiMail.post("/delete", { uids: selectedEmails })
 
-            // Remove deleted emails from the state
             setEmails(emails.filter((email) => !selectedEmails.includes(email.uid)))
             setSelectedEmails([])
 

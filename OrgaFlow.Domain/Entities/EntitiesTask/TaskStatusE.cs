@@ -6,5 +6,6 @@ public enum TaskStatusE
     ToDo,
     InProgress,
     Done,
-    Cancelled
+    Cancelled,
+    Completed,
 }

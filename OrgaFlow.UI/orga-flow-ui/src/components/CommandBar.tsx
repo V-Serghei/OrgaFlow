@@ -1,4 +1,3 @@
-// components/CommandBar.js
 "use client";
 
 import React, { useContext } from 'react';
@@ -16,7 +15,6 @@ export function CommandBar() {
         if (canUndo && !loading) {
             const success = await undo();
             if (success) {
-                // После успешной отмены обновляем данные
                 refreshTask();
             }
         }
@@ -26,7 +24,6 @@ export function CommandBar() {
         if (canRedo && !loading) {
             const success = await redo();
             if (success) {
-                // После успешного повтора обновляем данные
                 refreshTask();
             }
         }

@@ -212,7 +212,6 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
     
     public async Task DeleteUserAsync(HttpRequest request, HttpResponse response)
     {
-        // Получаем ID пользователя из токена
         var userId = request.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
         var req = new UserOperationRequest

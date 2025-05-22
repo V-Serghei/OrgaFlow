@@ -29,4 +29,5 @@ public interface ITaskRepository
     Task<bool> SoftDeleteAsync(int id);
     Task RestoreAsync(int id);
     Task<IEnumerable<ETask>> GetTaskSubtreeAsync(int id);
+    
 }

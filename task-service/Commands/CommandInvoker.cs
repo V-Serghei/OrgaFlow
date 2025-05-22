@@ -23,7 +23,6 @@ public class CommandInvoker
     {
         using (var scope = _serviceProvider.CreateScope())
         {
-            // Если команда требует внедрения зависимостей
             if (command is IRequiresDependencies commandWithDeps)
             {
                 commandWithDeps.ResolveDependencies(scope.ServiceProvider);
@@ -51,13 +50,11 @@ public class CommandInvoker
             if (_historyPosition < 0)
                 return false;
 
-            // Создаем scope перед получением сервисов
             using (var scope = _serviceProvider.CreateScope())
             {
                 var command = _commandHistory[_historyPosition];
                 if (command is IRequiresDependencies commandWithDeps)
                 {
-                    // Передаем ServiceProvider из scope, а не корневой
                     commandWithDeps.ResolveDependencies(scope.ServiceProvider);
                 }
 
@@ -75,7 +72,6 @@ public class CommandInvoker
         }
     }
 
-// Аналогично для RedoCommand
     public async Task<bool> RedoCommand()
     {
         try

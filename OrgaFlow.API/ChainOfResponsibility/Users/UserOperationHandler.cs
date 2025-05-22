@@ -106,7 +106,6 @@ public class UserOperationHandler: BaseRequestHandler<UserOperationRequest, User
                         var updatedUser = await _userService.UpdateUserAsync(updateData);
                         context.Response = new UserOperationResponse { User = updatedUser };
                         
-                        // Помечаем, что нужно обновить токен
                         context.SetMetadata("NeedsTokenUpdate", true);
                         context.SetMetadata("TokenData", new
                         {

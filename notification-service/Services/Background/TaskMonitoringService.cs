@@ -37,7 +37,6 @@ public class TaskMonitoringService: BackgroundService
             {
                 _logger.LogInformation("Checking for tasks due soon and overdue tasks");
                 
-                // Check for tasks due soon
                 var tasksDueSoon = await _taskClient.GetTasksDueWithinHoursAsync(dueSoonThresholdHours, stoppingToken);
                 foreach (var task in tasksDueSoon.Where(t => t.Notify))
                 {
@@ -54,7 +53,6 @@ public class TaskMonitoringService: BackgroundService
                     _eventPublisher.Notify(notificationEvent.Type, notificationEvent);
                 }
                 
-                // Check for overdue tasks
                 var overdueTasks = await _taskClient.GetOverdueTasksAsync(stoppingToken);
                 foreach (var task in overdueTasks.Where(t => t.Notify))
                 {
@@ -80,10 +78,8 @@ public class TaskMonitoringService: BackgroundService
         }
     }
     
-    // In a real application, this would call a user service
     private Task<string> GetUserEmailAsync(int userId)
     {
-        // Simplified for the example - would typically call a user service
         return Task.FromResult($"vistovschiiserghei@gmail.com");
     }
 }

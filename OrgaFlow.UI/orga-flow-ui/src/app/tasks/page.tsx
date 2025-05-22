@@ -1,12 +1,13 @@
-    "use client";
+"use client";
+
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Filter } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskTable } from "@/components/task-table";
 import api from "@/lib/api";
@@ -59,7 +60,6 @@ export default function TasksPage() {
     };
 
     const handleDeleteTask = () => {
-        // Обновляем список задач после удаления
         const fetchTasks = async () => {
             try {
                 const response = await api.get("/", {
@@ -83,8 +83,10 @@ export default function TasksPage() {
     };
 
     const filteredTasks = tasks.filter((task) =>
-        task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        (task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())))
+        &&
+        (statusFilter === "all" || task.status.toString() === statusFilter)
     );
 
     return (
@@ -129,10 +131,12 @@ export default function TasksPage() {
                                         <SelectValue placeholder="Сортировать по" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="createdAt">Дата создания</SelectItem>
-                                        <SelectItem value="name">Название</SelectItem>
+                                        <SelectItem value="newest">Дата создания (новые)</SelectItem>
+                                        <SelectItem value="oldest">Дата создания (старые)</SelectItem>
+                                        <SelectItem value="name-asc">Название (А-Я)</SelectItem>
+                                        <SelectItem value="name-desc">Название (Я-А)</SelectItem>
                                         <SelectItem value="importance">Приоритет</SelectItem>
-                                        <SelectItem value="endDate">Дата окончания</SelectItem>
+                                        <SelectItem value="due-soon">Дата окончания</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Select value={sortOrder} onValueChange={setSortOrder}>
@@ -147,7 +151,6 @@ export default function TasksPage() {
                             </div>
                         </div>
 
-                        {/* Кнопка создания задачи */}
                         <div className="flex justify-end">
                             <Button onClick={() => router.push("/tasks/new")}>
                                 <Plus className="mr-2 h-4 w-4" />
@@ -155,15 +158,41 @@ export default function TasksPage() {
                             </Button>
                         </div>
 
-                        {/* Вкладки для фильтрации */}
-                        <Tabs defaultValue="all" onValueChange={setStatusFilter}>
+                        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
                             <TabsList>
                                 <TabsTrigger value="all">Все</TabsTrigger>
                                 <TabsTrigger value="0">К выполнению</TabsTrigger>
                                 <TabsTrigger value="2">В процессе</TabsTrigger>
                                 <TabsTrigger value="1">Завершено</TabsTrigger>
                             </TabsList>
-                            <TabsContent value={statusFilter}>
+                            <TabsContent value="all">
+                                <TaskTable
+                                    tasks={filteredTasks}
+                                    onEdit={handleEditTask}
+                                    onDelete={handleDeleteTask}
+                                    isLoading={isLoading}
+                                    searchTerm={searchTerm}
+                                />
+                            </TabsContent>
+                            <TabsContent value="0">
+                                <TaskTable
+                                    tasks={filteredTasks}
+                                    onEdit={handleEditTask}
+                                    onDelete={handleDeleteTask}
+                                    isLoading={isLoading}
+                                    searchTerm={searchTerm}
+                                />
+                            </TabsContent>
+                            <TabsContent value="2">
+                                <TaskTable
+                                    tasks={filteredTasks}
+                                    onEdit={handleEditTask}
+                                    onDelete={handleDeleteTask}
+                                    isLoading={isLoading}
+                                    searchTerm={searchTerm}
+                                />
+                            </TabsContent>
+                            <TabsContent value="1">
                                 <TaskTable
                                     tasks={filteredTasks}
                                     onEdit={handleEditTask}

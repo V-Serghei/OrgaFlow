@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Edit, Trash2, Bell, MoreHorizontal, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +18,9 @@ import {
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
-    AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,9 +31,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useCommandInvoker } from "@/lib/hooks/useCommandInvoker";
 import { TaskCommandFactory } from "@/lib/commands/TaskCommandFactory";
 
-function highlightText(text, searchTerm) {
+function highlightText(text: string, searchTerm: string) {
     if (!searchTerm || !text) return text;
-    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+    const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, "gi");
     const parts = text.split(regex);
     return (
         <>
@@ -50,19 +50,49 @@ function highlightText(text, searchTerm) {
     );
 }
 
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTerm = "" }) {
-    const [deleteId, setDeleteId] = useState(null);
+interface Task {
+    id: number;
+    name: string;
+    description?: string;
+    status: number;
+    importance: number;
+    startDate: string;
+    endDate?: string;
+    notify: boolean;
+    children?: Task[];
+}
+
+interface TaskTableProps {
+    tasks: Task[];
+    onEdit: (task: Task) => void;
+    onDelete: () => void;
+    isLoading?: boolean;
+    searchTerm?: string;
+    sortBy?: string;
+    sortOrder?: string;
+}
+
+export function TaskTable({
+                              tasks,
+                              onEdit,
+                              onDelete,
+                              isLoading = false,
+                              searchTerm = "",
+                              sortBy = "newest",
+                              sortOrder = "desc",
+                          }: TaskTableProps) {
+    const [deleteId, setDeleteId] = useState<number | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [expandedTasks, setExpandedTasks] = useState({});
+    const [expandedTasks, setExpandedTasks] = useState<Record<number, boolean>>({});
     const { toast } = useToast();
     const { executeCommand } = useCommandInvoker();
     const commandFactory = new TaskCommandFactory();
 
-    const handleSubscribe = async (task) => {
+    const handleSubscribe = async (task: Task) => {
         try {
             await apiNotify.post("/subscribe", task);
             toast({
@@ -70,7 +100,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                 description: "Подписка на задачу оформлена.",
             });
         } catch (error) {
-            console.error("Error subscribing to notifications:", error);
+            console.error("Ошибка подписки на уведомления:", error);
             toast({
                 title: "Ошибка",
                 description: "Не удалось подписаться на уведомления.",
@@ -94,7 +124,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
 
             onDelete();
         } catch (error) {
-            console.error("Error deleting task:", error);
+            console.error("Ошибка удаления задачи:", error);
             toast({
                 title: "Ошибка удаления",
                 description: "Не удалось удалить задачу.",
@@ -106,66 +136,111 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
         }
     };
 
-    const toggleExpand = (taskId) => {
-        setExpandedTasks(prev => ({
+    const toggleExpand = (taskId: number) => {
+        setExpandedTasks((prev) => ({
             ...prev,
-            [taskId]: !prev[taskId]
+            [taskId]: !prev[taskId],
         }));
     };
 
-    const getImportanceBadge = (importance) => {
+    const getImportanceBadge = (importance: number) => {
         const variants = {
-            0: { variant: "outline", label: "Низкий" },
-            1: { variant: "secondary", label: "Средний" },
-            2: { variant: "default", label: "Высокий" },
-            3: { variant: "destructive", label: "Критический" }
+            0: { variant: "outline" as const, label: "Низкий" },
+            1: { variant: "secondary" as const, label: "Средний" },
+            2: { variant: "default" as const, label: "Высокий" },
+            3: { variant: "destructive" as const, label: "Критический" },
         };
         const { variant, label } = variants[importance] || variants[0];
         return <Badge variant={variant}>{label}</Badge>;
     };
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status: number) => {
         const statusMap = {
-            0: { variant: "default", label: "К выполнению" },
-            1: { variant: "success", label: "Завершено" },
-            2: { variant: "warning", label: "В процессе" }
+            0: { variant: "default" as const, label: "К выполнению" },
+            1: { variant: "success" as const, label: "Завершено" },
+            2: { variant: "warning" as const, label: "В процессе" },
         };
         const { variant, label } = statusMap[status] || statusMap[0];
         return <Badge variant={variant}>{label}</Badge>;
     };
 
-    const getRowBackgroundColor = (level) => {
+    const getRowBackgroundColor = (level: number) => {
         if (level === 0) return "";
         const colors = ["bg-muted/20", "bg-muted/30", "bg-muted/40", "bg-muted/50"];
         return colors[Math.min(level - 1, colors.length - 1)];
     };
 
-    useEffect(() => {
-        if (!searchTerm) return;
-        const expandMatchingTasks = (taskList) => {
-            taskList.forEach(task => {
+    // Функция сортировки задач
+    const sortTasks = (tasks: Task[]): Task[] => {
+        const sortSelector = (task: Task) => {
+            switch (sortBy?.toLowerCase()) {
+                case "newest":
+                case "oldest":
+                    return new Date(task.startDate);
+                case "name":
+                case "name-asc":
+                case "name-desc":
+                    return task.name;
+                case "importance":
+                case "priority":
+                    return task.importance;
+                case "deadline":
+                    return task.endDate ? new Date(task.endDate) : new Date(9999, 11, 31);
+                default:
+                    return new Date(task.startDate);
+            }
+        };
+
+        const isDescending = sortOrder === "desc" || ["newest", "name-desc", "importance", "priority"].includes(sortBy?.toLowerCase());
+
+        const sortedTasks = [...tasks].sort((a, b) => {
+            const aValue = sortSelector(a);
+            const bValue = sortSelector(b);
+            if (aValue < bValue) return isDescending ? 1 : -1;
+            if (aValue > bValue) return isDescending ? -1 : 1;
+            return 0;
+        });
+
+        // Сортируем подзадачи рекурсивно
+        return sortedTasks.map((task) => ({
+            ...task,
+            children: task.children && task.children.length > 0 ? sortTasks(task.children) : [],
+        }));
+    };
+
+    // Мемоизация для автоматического раскрытия задач при поиске
+    const autoExpandTasks = useMemo(() => {
+        const expanded: Record<number, boolean> = {};
+        const expandMatchingTasks = (taskList: Task[], parentId?: number) => {
+            taskList.forEach((task) => {
                 const matches =
-                    task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-                if (matches && task.children && task.children.length > 0) {
-                    setExpandedTasks(prev => ({
-                        ...prev,
-                        [task.id]: true
-                    }));
+                    searchTerm &&
+                    (task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase())));
+                if (matches && parentId) {
+                    expanded[parentId] = true;
                 }
                 if (task.children && task.children.length > 0) {
-                    expandMatchingTasks(task.children);
+                    expanded[task.id] = matches || expanded[task.id];
+                    expandMatchingTasks(task.children, task.id);
                 }
             });
         };
-        expandMatchingTasks(tasks);
+        if (searchTerm) {
+            expandMatchingTasks(tasks);
+        }
+        return expanded;
     }, [searchTerm, tasks]);
 
-    const renderTaskRow = (task, level = 0) => {
-        const hasChildren = task.children && task.children.length > 0;
+    useEffect(() => {
+        setExpandedTasks((prev) => ({ ...prev, ...autoExpandTasks }));
+    }, [autoExpandTasks]);
+
+    const renderTaskRow = (task: Task, level: number = 0): JSX.Element[] => {
+        const hasChildren = Array.isArray(task.children) && task.children.length > 0;
         const isExpanded = expandedTasks[task.id];
         const indentWidth = level * 16;
-        const rows = [];
+        const rows: JSX.Element[] = [];
 
         rows.push(
             <TableRow
@@ -177,7 +252,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                         {level > 0 && (
                             <div
                                 className="absolute left-0 top-0 bottom-0 border-l-2 border-muted-foreground/20"
-                                style={{ left: `${(level - 1) * 16 + 4}px`, height: '100%' }}
+                                style={{ left: `${(level - 1) * 16 + 4}px`, height: "100%" }}
                             ></div>
                         )}
                         <div style={{ width: `${indentWidth}px` }} className="flex-shrink-0"></div>
@@ -207,8 +282,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                 <TableCell className="hidden max-w-[250px] truncate md:table-cell">
                     {searchTerm
                         ? highlightText(task.description || "Описание отсутствует", searchTerm)
-                        : (task.description || "Описание отсутствует")
-                    }
+                        : task.description || "Описание отсутствует"}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                     <div className="flex gap-2">
@@ -255,9 +329,10 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
         );
 
         if (hasChildren && isExpanded) {
-            task.children.forEach((child) => {
+            const sortedChildren = sortTasks(task.children); 
+            sortedChildren.forEach((child) => {
                 const childRows = renderTaskRow(child, level + 1);
-                childRows.forEach(row => rows.push(row));
+                childRows.forEach((row) => rows.push(row));
             });
         }
 
@@ -266,15 +341,27 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
 
     const renderTasks = () => {
         if (isLoading) {
-            return Array(5).fill(0).map((_, index) => (
-                <TableRow key={`loading-${index}`}>
-                    <TableCell><Skeleton className="h-5 w-8" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-[200px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[250px]" /></TableCell>
-                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[120px]" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-9 w-9 rounded-full ml-auto" /></TableCell>
-                </TableRow>
-            ));
+            return Array(5)
+                .fill(0)
+                .map((_, index) => (
+                    <TableRow key={`loading-${index}`}>
+                        <TableCell>
+                            <Skeleton className="h-5 w-8" />
+                        </TableCell>
+                        <TableCell>
+                            <Skeleton className="h-5 w-[200px]" />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-5 w-[250px]" />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-5 w-[120px]" />
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <Skeleton className="h-9 w-9 rounded-full ml-auto" />
+                        </TableCell>
+                    </TableRow>
+                ));
         }
 
         if (!tasks.length) {
@@ -287,10 +374,11 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
             );
         }
 
-        const allRows = [];
-        tasks.forEach(task => {
+        const sortedTasks = sortTasks(tasks); 
+        const allRows: JSX.Element[] = [];
+        sortedTasks.forEach((task) => {
             const taskRows = renderTaskRow(task);
-            taskRows.forEach(row => allRows.push(row));
+            taskRows.forEach((row) => allRows.push(row));
         });
 
         return allRows;
@@ -309,9 +397,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                             <TableHead className="text-right">Действия</TableHead>
                         </TableRow>
                     </TableHeader>
-                    <TableBody>
-                        {renderTasks()}
-                    </TableBody>
+                    <TableBody>{renderTasks()}</TableBody>
                 </Table>
             </div>
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

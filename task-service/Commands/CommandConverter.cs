@@ -38,11 +38,9 @@ namespace task_service.Commands
                     var taskDto = JsonSerializer.Deserialize<TaskDto>(createTaskDto.GetRawText(), options);
                     var command = new CreateTaskCommand(taskDto, repository);
                     
-                    // Восстанавливаем createdTask если есть
                     if (jsonObject.TryGetProperty("createdTask", out var createdTaskElem))
                     {
                         var createdTask = JsonSerializer.Deserialize<ETask>(createdTaskElem.GetRawText(), options);
-                        // Устанавливаем через рефлексию
                         var createdTaskField = command.GetType().GetField("_createdTask", 
                             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                         if (createdTaskField != null)
@@ -61,7 +59,6 @@ namespace task_service.Commands
                     var taskDto = JsonSerializer.Deserialize<TaskDto>(updateTaskDto.GetRawText(), options);
                     var command = new UpdateTaskCommand(taskDto, repository);
                     
-                    // Восстанавливаем originalTask если есть
                     if (jsonObject.TryGetProperty("originalTask", out var originalTaskElem))
                     {
                         var originalTask = JsonSerializer.Deserialize<ETask>(originalTaskElem.GetRawText(), options);
@@ -83,7 +80,6 @@ namespace task_service.Commands
                     var taskId = taskIdElement.GetInt32();
                     var command = new DeleteTaskCommand(taskId, repository);
                     
-                    // Восстанавливаем deletedTasks если есть
                     if (jsonObject.TryGetProperty("deletedTasks", out var deletedTasksElem))
                     {
                         var deletedTasks = JsonSerializer.Deserialize<IEnumerable<ETask>>(deletedTasksElem.GetRawText(), options);
@@ -110,7 +106,6 @@ namespace task_service.Commands
     
     if (value is CreateTaskCommand createCmd)
     {
-        // Сохраняем только taskDto, а не весь репозиторий
         var taskDtoField = createCmd.GetType().GetField("_taskDto", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (taskDtoField != null)
@@ -120,7 +115,6 @@ namespace task_service.Commands
             JsonSerializer.Serialize(writer, taskDto, options);
         }
 
-        // Сохраняем _createdTask для возможности Undo
         var createdTaskField = createCmd.GetType().GetField("_createdTask", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (createdTaskField != null)
@@ -135,7 +129,6 @@ namespace task_service.Commands
     }
     else if (value is UpdateTaskCommand updateCmd)
     {
-        // Сохраняем taskDto для Execute/Redo
         var taskDtoField = updateCmd.GetType().GetField("_taskDto", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (taskDtoField != null)
@@ -145,7 +138,6 @@ namespace task_service.Commands
             JsonSerializer.Serialize(writer, taskDto, options);
         }
         
-        // Сохраняем originalTask для Undo
         var originalTaskField = updateCmd.GetType().GetField("_originalTask", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (originalTaskField != null)
@@ -160,7 +152,6 @@ namespace task_service.Commands
     }
     else if (value is DeleteTaskCommand deleteCmd)
     {
-        // Сохраняем taskId для Execute/Redo
         var taskIdField = deleteCmd.GetType().GetField("_taskId", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (taskIdField != null)
@@ -169,7 +160,6 @@ namespace task_service.Commands
             writer.WriteNumber("taskId", taskId);
         }
         
-        // Сохраняем deletedTasks для Undo
         var deletedTasksField = deleteCmd.GetType().GetField("_deletedTasks", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (deletedTasksField != null)

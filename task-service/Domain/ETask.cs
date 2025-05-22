@@ -32,4 +32,5 @@ public class ETask
         public List<TaskParticipant> Participants { get; set; } = new List<TaskParticipant>();
         public List<TaskTag> Tags { get; set; } = new List<TaskTag>();
         public List<TaskAttachment> Attachments { get; set; } = new List<TaskAttachment>();
+        public List<ETask> Children { get; set; } = new List<ETask>();
 }

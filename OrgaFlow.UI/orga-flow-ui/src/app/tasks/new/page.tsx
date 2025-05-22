@@ -25,6 +25,20 @@ import { CommandBar } from "@/components/CommandBar";
 import { useCommandInvoker } from "@/lib/hooks/useCommandInvoker";
 import { TaskCommandFactory } from "@/lib/commands/TaskCommandFactory";
 
+interface Task {
+    id: number;
+    name: string;
+    description?: string;
+    status: number;
+    importance: number;
+    startDate: string;
+    endDate?: string;
+    notify: boolean;
+    parentId?: number | null;
+    type?: string;
+    children?: Task[];
+}
+
 export default function NewTask() {
     const router = useRouter();
     const { toast } = useToast();
@@ -44,24 +58,27 @@ export default function NewTask() {
         });
     }
 
+    console.log("Parent tasks in NewTask:", parentTasks); // Отладка
+    console.log("Number of parent tasks:", parentTasks.length); // Отладка
+
     const [task, setTask] = useState({
         name: "",
         description: "",
-        type: "task", // task, meeting, deadline, presentation, personal
-        priority: "medium", // low, medium, high, critical
+        type: "task",
+        priority: "medium",
         startDate: currentDate,
-        endDate: null,
+        endDate: null as Date | null,
         startTime: "09:00",
         endTime: "10:00",
         location: "",
         isAllDay: false,
         isRecurring: false,
         recurrencePattern: "weekly",
-        participants: [],
+        participants: [] as { id: number; name: string; avatar: string }[],
         assignedTo: currentUser,
-        tags: [],
-        status: 0, // 0 = To Do, 1 = Completed, 2 = In Progress
-        parentId: null,
+        tags: [] as { id: number; name: string; color: string }[],
+        status: 0,
+        parentId: null as number | null,
         notify: false,
     });
 
@@ -84,7 +101,7 @@ export default function NewTask() {
 
     const [newTag, setNewTag] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-    const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(true); // Для тестирования
 
     const importanceMap: Record<string, number> = {
         low: 0,
@@ -120,16 +137,8 @@ export default function NewTask() {
                 createdBy: currentUser,
                 createdAt: new Date().toISOString(),
                 parentId: task.parentId,
-                participants: task.participants.map((p) => ({
-                    id: p.id,
-                    name: p.name,
-                    avatar: p.avatar,
-                })),
-                tags: task.tags.map((t) => ({
-                    id: t.id,
-                    name: t.name,
-                    color: t.color,
-                })),
+                participants: task.participants,
+                tags: task.tags,
             };
 
             const createCommand = commandFactory.createCreateCommand(taskData);
@@ -175,7 +184,7 @@ export default function NewTask() {
         }
     };
 
-    const handleAddPresetTag = (tagToAdd: any) => {
+    const handleAddPresetTag = (tagToAdd: { id: number; name: string; color: string }) => {
         if (!task.tags.some((tag) => tag.id === tagToAdd.id)) {
             setTask({ ...task, tags: [...task.tags, tagToAdd] });
         }
@@ -185,7 +194,7 @@ export default function NewTask() {
         setTask({ ...task, tags: task.tags.filter((tag) => tag.id !== tagId) });
     };
 
-    const addParticipant = (participant: any) => {
+    const addParticipant = (participant: { id: number; name: string; avatar: string }) => {
         if (!task.participants.some((p) => p.id === participant.id)) {
             setTask({ ...task, participants: [...task.participants, participant] });
         }
@@ -214,6 +223,27 @@ export default function NewTask() {
         }
     };
 
+    // Рекурсивная функция для рендеринга задач с учетом вложенности
+    const renderTaskOptions = (tasks: Task[], level: number = 0): JSX.Element[] => {
+        const indent = "  ".repeat(level); // Отступ для вложенных задач
+        return tasks.map((parentTask) => [
+            <SelectItem key={parentTask.id} value={parentTask.id.toString()}>
+                <div className="flex items-center">
+                    <span className="mr-2">{indent}</span>
+                    {parentTask.type === "meeting" && <Users className="h-4 w-4 mr-2 text-blue-500" />}
+                    {parentTask.type === "deadline" && <AlertCircle className="h-4 w-4 mr-2 text-red-500" />}
+                    {parentTask.type === "presentation" && <div className="mr-2 text-amber-500">📊</div>}
+                    {parentTask.type === "personal" && <div className="mr-2 text-purple-500">🌱</div>}
+                    {(parentTask.type === "task" || !parentTask.type) && <div className="mr-2 text-green-500">✓</div>}
+                    {parentTask.name}
+                </div>
+            </SelectItem>,
+            ...(parentTask.children && parentTask.children.length > 0
+                ? renderTaskOptions(parentTask.children, level + 1)
+                : []),
+        ]).flat();
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -228,7 +258,6 @@ export default function NewTask() {
 
             <form onSubmit={handleSubmit}>
                 <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
-                    {/* Основная информация о задаче */}
                     <Card>
                         <CardHeader>
                             <div className="flex items-center gap-2">
@@ -238,7 +267,6 @@ export default function NewTask() {
                             <CardDescription>Заполните детали для вашей новой задачи</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            {/* Основные поля */}
                             <div className="space-y-4">
                                 <div className="grid gap-2">
                                     <Label htmlFor="name">Название</Label>
@@ -264,7 +292,6 @@ export default function NewTask() {
 
                             <Separator />
 
-                            {/* Настройки времени и даты */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium">Время и дата</h3>
                                 <div className="flex items-center space-x-2">
@@ -393,7 +420,6 @@ export default function NewTask() {
 
                             <Separator />
 
-                            {/* Место проведения */}
                             {(task.type === "meeting" || task.type === "presentation") && (
                                 <div className="space-y-4">
                                     <div className="grid gap-2">
@@ -414,7 +440,6 @@ export default function NewTask() {
                                 </div>
                             )}
 
-                            {/* Участники */}
                             {(task.type === "meeting" || task.type === "presentation") && (
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-medium">Участники</h3>
@@ -470,7 +495,6 @@ export default function NewTask() {
                                 </div>
                             )}
 
-                            {/* Теги */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium">Теги</h3>
                                 {task.tags.length > 0 && (
@@ -519,7 +543,6 @@ export default function NewTask() {
                         </CardContent>
                     </Card>
 
-                    {/* Настройки задачи */}
                     <div className="space-y-6">
                         <Card>
                             <CardHeader>
@@ -687,7 +710,9 @@ export default function NewTask() {
                                                     <SelectTrigger id="parentId">
                                                         <SelectValue
                                                             placeholder={
-                                                                loadingParentTasks ? "Загрузка задач..." : "Выберите родительскую задачу"
+                                                                loadingParentTasks
+                                                                    ? "Загрузка задач..."
+                                                                    : "Выберите родительскую задачу"
                                                             }
                                                         />
                                                     </SelectTrigger>
@@ -698,29 +723,7 @@ export default function NewTask() {
                                                                 Загрузка доступных задач...
                                                             </div>
                                                         )}
-                                                        {!loadingParentTasks &&
-                                                            parentTasks.map((parentTask: any) => (
-                                                                <SelectItem key={parentTask.id} value={parentTask.id.toString()}>
-                                                                    <div className="flex items-center">
-                                                                        {parentTask.type === "meeting" && (
-                                                                            <Users className="h-4 w-4 mr-2 text-blue-500" />
-                                                                        )}
-                                                                        {parentTask.type === "deadline" && (
-                                                                            <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-                                                                        )}
-                                                                        {parentTask.type === "presentation" && (
-                                                                            <div className="mr-2 text-amber-500">📊</div>
-                                                                        )}
-                                                                        {parentTask.type === "personal" && (
-                                                                            <div className="mr-2 text-purple-500">🌱</div>
-                                                                        )}
-                                                                        {(parentTask.type === "task" || !parentTask.type) && (
-                                                                            <div className="mr-2 text-green-500">✓</div>
-                                                                        )}
-                                                                        {parentTask.name}
-                                                                    </div>
-                                                                </SelectItem>
-                                                            ))}
+                                                        {!loadingParentTasks && renderTaskOptions(parentTasks)}
                                                         {!loadingParentTasks && parentTasks.length === 0 && (
                                                             <div className="py-2 px-2 text-sm text-muted-foreground">
                                                                 Нет доступных задач
@@ -738,7 +741,6 @@ export default function NewTask() {
                             </CardContent>
                         </Card>
 
-                        {/* Предпросмотр */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Предпросмотр</CardTitle>
@@ -832,7 +834,6 @@ export default function NewTask() {
                             </CardContent>
                         </Card>
 
-                        {/* Кнопки действий */}
                         <div className="flex justify-end space-x-2">
                             <Button variant="outline" type="button" onClick={() => router.push("/tasks")}>
                                 Отмена

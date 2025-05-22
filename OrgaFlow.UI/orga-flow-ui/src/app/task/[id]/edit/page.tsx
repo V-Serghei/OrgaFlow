@@ -45,7 +45,6 @@ export default function EditTask() {
         try {
             if (!dateString) return "Неизвестно";
 
-            // Отладочная информация
             console.log("Форматируемая дата:", dateString, typeof dateString);
 
             const date = new Date(dateString);
@@ -165,7 +164,6 @@ export default function EditTask() {
         setIsSaving(true);
 
         try {
-            // Используем PascalCase для имен полей, точно как в классе TaskUpdateRequest
             const taskData = {
                 Name: task.name,
                 Description: task.description,
@@ -182,12 +180,9 @@ export default function EditTask() {
                 RecurrencePattern: task.isRecurring ? task.recurrencePattern : "",
                 Notify: task.notify,
                 AssignedTo: task.assignedTo,
-                // Важно! Именно UpdatedBy, а не updatedBy
                 UpdatedBy: currentUser,
-                // Важно! Именно UpdatedAt, а не updatedAt  
                 UpdatedAt: new Date().toISOString(),
                 ParentId: task.parentId,
-                // Преобразуем массивы так же, как в рабочем коде
                 Participants: task.participants?.map((p) => ({
                     Id: p.id,
                     Name: p.name,
@@ -200,7 +195,6 @@ export default function EditTask() {
                 })) || [],
             };
 
-            // Отладочная информация - закомментируйте в рабочей версии
             console.log("Sending data to server:", taskData);
 
             const updateCommand = commandFactory.createUpdateCommand(Number(id), taskData);
@@ -215,7 +209,6 @@ export default function EditTask() {
             router.push(`/task/${id}`);
         } catch (error) {
             console.error("Error updating task:", error);
-            // Улучшенное отображение ошибки
             let errorMessage = "Произошла ошибка при обновлении задачи.";
             if (error.response) {
                 console.log("Response status:", error.response.status);
@@ -787,7 +780,6 @@ export default function EditTask() {
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="null">Нет родителя (задача верхнего уровня)</SelectItem>
-                                                        {/* Реальный запрос к API будет в useParentTasks */}
                                                     </SelectContent>
                                                 </Select>
                                             </div>

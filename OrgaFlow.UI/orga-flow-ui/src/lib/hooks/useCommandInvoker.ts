@@ -1,4 +1,3 @@
-// lib/hooks/useCommandInvoker.js
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,7 +10,6 @@ export function useCommandInvoker() {
     const [canRedo, setCanRedo] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Функция для получения состояния команд с сервера
     const refreshCommandState = useCallback(async () => {
         try {
             const response = await api.get('/commands/state');
@@ -22,20 +20,15 @@ export function useCommandInvoker() {
         }
     }, []);
 
-    // Загружаем состояние при монтировании компонента
     useEffect(() => {
         refreshCommandState();
     }, [refreshCommandState]);
 
-    // Выполнение команды через API - ИСПРАВЛЕНО
     const executeCommand = async (command) => {
         setLoading(true);
         try {
-            // Вместо проверки типов команды, просто вызываем ее метод execute
-            // Это избавляет от необходимости импортировать классы команд
             const result = await command.execute();
 
-            // Обновляем состояние команд после выполнения
             await refreshCommandState();
 
             return result;
@@ -51,7 +44,6 @@ export function useCommandInvoker() {
         }
     };
 
-    // Отмена команды
     const undo = async () => {
         setLoading(true);
         try {
@@ -85,7 +77,6 @@ export function useCommandInvoker() {
         }
     };
 
-    // Повтор команды
     const redo = async () => {
         setLoading(true);
         try {

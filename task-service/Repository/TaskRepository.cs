@@ -19,18 +19,28 @@ public class TaskRepository : ITaskRepository
     public async Task<ETask?> GetTaskDataById(int id, CancellationToken cancellationToken)
     {
         var dbModel = await _context.TaskTable
-                                    .AsNoTracking()
-                                    .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted, cancellationToken);
+            .AsNoTracking()
+            .Include(t => t.Tags)
+            .Include(t => t.Participants)
+            .Include(t => t.Attachments)
+            .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted, cancellationToken);
         return dbModel?.Adapt<ETask>();
     }
 
     public async Task<TaskDto?> GetTaskTreeDtoById(int id, CancellationToken cancellationToken)
     {
+        var taskWithDetails = await _context.TaskTable
+            .AsNoTracking()
+            .Include(t => t.Tags)
+            .Include(t => t.Participants)
+            .Include(t => t.Attachments)
+            .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted, cancellationToken);
+    
+        if (taskWithDetails == null) return null;
+    
         var allTasks = await GetAllTaskData(cancellationToken);
-        var taskData = allTasks.FirstOrDefault(t => t.Id == id);
-        if (taskData == null) return null;
-
-        var result = taskData.Adapt<TaskDto>();
+    
+        var result = taskWithDetails.Adapt<TaskDto>();
         AddChildrenRecursive(result, allTasks);
         return result;
     }
@@ -38,9 +48,12 @@ public class TaskRepository : ITaskRepository
     private async Task<List<ETask>> GetAllTaskData(CancellationToken cancellationToken)
     {
         var list = await _context.TaskTable
-                                 .AsNoTracking()
-                                 .Where(t => !t.IsDeleted)
-                                 .ToListAsync(cancellationToken);
+            .AsNoTracking()
+            .Include(t => t.Tags)
+            .Include(t => t.Participants)
+            .Include(t => t.Attachments)
+            .Where(t => !t.IsDeleted)
+            .ToListAsync(cancellationToken);
         return list.Adapt<List<ETask>>();
     }
 
@@ -141,19 +154,31 @@ public class TaskRepository : ITaskRepository
 
     private TaskDto ConvertToDto(ETask task)
     {
-        return new TaskDto
-        {
-            Id = task.Id,
-            Name = task.Name,
-            Description = task.Description,
-            Status = task.Status,
-            Importance = task.Importance,
-            StartDate = task.StartDate,
-            EndDate = task.EndDate,
-            Notify = task.Notify,
-            ParentId = task.ParentId,
-            Children = new List<TaskDto>()
-        };
+        return new TaskDto{
+                Id = task.Id,
+                Name = task.Name,
+                Description = task.Description,
+                Status = task.Status,
+                Importance = task.Importance,
+                Type = task.Type,
+                StartDate = task.StartDate,
+                EndDate = task.EndDate,
+                StartTime = task.StartTime,
+                EndTime = task.EndTime,
+                Location = task.Location,
+                IsAllDay = task.IsAllDay,
+                IsRecurring = task.IsRecurring,
+                RecurrencePattern = task.RecurrencePattern,
+                Notify = task.Notify,
+                AssignedTo = task.AssignedTo,
+                CreatedBy = task.CreatedBy,
+                CreatedAt = task.CreatedAt,
+                ParentId = task.ParentId,
+                Children = new List<TaskDto>(),
+                Participants = task.Participants?.Select(p => p.Adapt<ParticipantDto>()).ToList() ?? new List<ParticipantDto>(),
+                Tags = task.Tags?.Select(t => t.Adapt<TagDto>()).ToList() ?? new List<TagDto>(),
+                Attachments = task.Attachments?.Select(a => a.Adapt<AttachmentDto>()).ToList() ?? new List<AttachmentDto>()
+            };
     }
 
     public async Task<ETask> AddTask(ETask task, CancellationToken cancellationToken)
@@ -170,7 +195,7 @@ public class TaskRepository : ITaskRepository
         var dbModel = task.Adapt<TaskDbModel>();
         dbModel.StartDate = task.StartDate.ToUniversalTime();
         dbModel.EndDate = task.EndDate.ToUniversalTime();
-        dbModel.IsDeleted = false; // Устанавливаем по умолчанию
+        dbModel.IsDeleted = false;
         await _context.TaskTable.AddAsync(dbModel, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return dbModel.Adapt<ETask>();
@@ -194,16 +219,57 @@ public class TaskRepository : ITaskRepository
 
         var dbModel = await _context.TaskTable.FindAsync(new object[] { task.Id }, cancellationToken);
         if (dbModel == null || dbModel.IsDeleted) return null;
-
+        
+        if(IsEqualStatus(dbModel.Status, task.Status) && !IsEqualModel(dbModel,task) )
+        {
+            dbModel.Status = task.Status switch
+            {
+                TaskStatusT.Completed => TaskStatusE.Completed,
+                TaskStatusT.InProgress => TaskStatusE.InProgress,
+                TaskStatusT.Cancelled => TaskStatusE.Cancelled,
+                TaskStatusT.Created => TaskStatusE.Created,
+                TaskStatusT.Done => TaskStatusE.Done,
+                TaskStatusT.ToDo => TaskStatusE.ToDo,
+                _ => dbModel.Status
+            };
+            dbModel.CreatedAt = DateTime.Now.ToUniversalTime();
+            _context.TaskTable.Update(dbModel);
+            await _context.SaveChangesAsync(cancellationToken);
+            return dbModel.Adapt<ETask>();
+        }
         task.Adapt(dbModel);
         _context.TaskTable.Update(dbModel);
         await _context.SaveChangesAsync(cancellationToken);
         return dbModel.Adapt<ETask>();
     }
 
+    private bool IsEqualModel(TaskDbModel dbModel, ETask task)
+    {
+        return (
+            dbModel.Name != task.Name ||
+            dbModel.Description != task.Description ||
+            dbModel.StartDate != task.StartDate ||
+            dbModel.EndDate != task.EndDate ||
+            dbModel.StartTime != task.StartTime ||
+            dbModel.EndTime != task.EndTime ||
+            dbModel.Location != task.Location ||
+            dbModel.IsAllDay != task.IsAllDay ||
+            dbModel.IsRecurring != task.IsRecurring ||
+            dbModel.RecurrencePattern != task.RecurrencePattern ||
+            dbModel.Notify != task.Notify ||
+            dbModel.Type != task.Type);
+    }
+
+    private bool IsEqualStatus(TaskStatusE statusDb, TaskStatusT statusModel)
+    {
+        var statusDbString = statusDb.ToString();
+        var statusModelString = statusModel.ToString();
+        return statusDbString != statusModelString;
+    }
+
     public async Task<bool> DeleteTask(int id, CancellationToken cancellationToken)
     {
-        return await SoftDeleteAsync(id); // Перенаправляем на мягкое удаление
+        return await SoftDeleteAsync(id);
     }
 
     public async Task<bool> SoftDeleteAsync(int id)
@@ -345,22 +411,67 @@ public class TaskRepository : ITaskRepository
 
     public async Task<IEnumerable<ETask>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
     {
-        var tasks = await GetAllTasks(CancellationToken.None);
+        var allTasks = await GetAllTasks(CancellationToken.None);
 
         if (notificationsEnabled.HasValue)
         {
-            tasks = tasks.Where(t => t.Notify == notificationsEnabled.Value).ToList();
+            allTasks = allTasks.Where(t => t.Notify == notificationsEnabled.Value).ToList();
         }
 
-        return sortBy?.ToLower() switch
+        var taskDict = allTasks.ToDictionary(t => t.Id, t => t);
+        var rootTasks = new List<ETask>();
+
+        foreach (var task in allTasks)
         {
-            "newest" => tasks.OrderByDescending(t => t.StartDate),
-            "oldest" => tasks.OrderBy(t => t.StartDate),
-            "priority" => tasks.OrderByDescending(t => t.Importance),
-            "name" => tasks.OrderBy(t => t.Name),
-            "deadline" => tasks.OrderBy(t => t.EndDate),
-            _ => tasks.OrderByDescending(t => t.StartDate)
+            if (task.ParentId.HasValue && taskDict.ContainsKey(task.ParentId.Value))
+            {
+                taskDict[task.ParentId.Value].Children.Add(task);
+            }
+            else
+            {
+                rootTasks.Add(task);
+            }
+        }
+
+        Func<ETask, object> sortSelector = sortBy?.ToLower() switch
+        {
+            "newest" => t => t.StartDate,
+            "oldest" => t => t.StartDate,
+            "priority" => t => t.Importance,
+            "name" => t => t.Name,
+            "name-asc" => t => t.Name,
+            "name-desc" => t => t.Name,
+            "importance" => t => t.Importance,
+            _ => t => t.StartDate
         };
+
+        bool isDescending = sortBy?.ToLower() switch
+        {
+            "newest" => true,
+            "priority" => true,
+            "name-desc" => true,
+            "importance" => true,
+            _ => false
+        };
+
+        IEnumerable<ETask> SortTasks(IEnumerable<ETask> tasks, Func<ETask, object> selector, bool descending)
+        {
+            var sortedTasks = descending
+                ? tasks.OrderByDescending(selector)
+                : tasks.OrderBy(selector);
+
+            foreach (var task in sortedTasks)
+            {
+                if (task.Children.Any())
+                {
+                    task.Children = SortTasks(task.Children, selector, descending).ToList();
+                }
+            }
+
+            return sortedTasks;
+        }
+
+        return SortTasks(rootTasks, sortSelector, isDescending);
     }
 
     public async Task<IEnumerable<ETask>> GetTasksDueWithinHoursAsync(int hours)

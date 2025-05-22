@@ -39,10 +39,10 @@ namespace OrgaFlow.Application.Controllers.TaskController
         {
             try
             {
-                // Use the sorting strategy if provided
                 if (!string.IsNullOrEmpty(sortBy))
                 {
-                    return Ok(await _facade.GetSortedTasksAsync(sortBy, notificationsEnabled));
+                    var result = await _facade.GetSortedTasksAsync(sortBy, notificationsEnabled);
+                    return Ok(result);
                 }
                 
                 return Ok(await _facade.GetAllTasksAsync());
@@ -64,7 +64,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             {
                 if (!string.IsNullOrEmpty(sortBy))
                 {
-                    return Ok(await _facade.GetSortedTasksUserIdAsync(currentUser, sortBy, notificationsEnabled));
+                    var result = await _facade.GetSortedTasksUserIdAsync(currentUser, sortBy, notificationsEnabled);
+                    return Ok(result);
                 }
                 
                 return Ok(await _facade.GetAllTasksAsync());

@@ -120,6 +120,14 @@ namespace task_service.Controllers
                     ParentId = task.ParentId,
                     CreatedAt = task.CreatedAt,
                     CreatedBy = task.CreatedBy,
+                   Priority = task.Importance switch
+                                        {
+                                            TaskImportance.Low => "low",
+                                            TaskImportance.Medium => "medium",
+                                            TaskImportance.High => "high",
+                                            TaskImportance.Critical => "critical",
+                                            _ => "medium"
+                                        },
                 };
                 taskDto.Participants = task.Participants.Select(p => new ParticipantDto
                 {

@@ -18,7 +18,6 @@ public class CreateTaskCommand : ICommand, IRequiresDependencies
 
     public async Task<bool> CanExecute()
     {
-        // Basic validation
         if (string.IsNullOrEmpty(_taskDto.Name))
             return false;
         
@@ -53,10 +52,12 @@ public class CreateTaskCommand : ICommand, IRequiresDependencies
             RecurrencePattern = _taskDto.RecurrencePattern ?? "weekly",
             AssignedTo = _taskDto.AssignedTo ?? string.Empty,
             CreatedBy = _taskDto.CreatedBy ?? string.Empty,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            Participants = new List<TaskParticipant>(),
+            Tags = new List<TaskTag>(),
+            
         };
 
-        // Adding participants
         if (_taskDto.Participants != null)
         {
             foreach (var participant in _taskDto.Participants)
@@ -69,7 +70,6 @@ public class CreateTaskCommand : ICommand, IRequiresDependencies
             }
         }
 
-        // Adding tags
         if (_taskDto.Tags != null)
         {
             foreach (var tag in _taskDto.Tags)
