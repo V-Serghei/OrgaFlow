@@ -63,7 +63,7 @@ public class CachingTaskServiceDecorator : ITaskService
         return task;
     }
 
-    public async Task<TaskDto> CreateTaskAsync(TaskDto task)
+    public async Task<TaskDto?> CreateTaskAsync(TaskDto task)
     {
         var createdTask = await _inner.CreateTaskAsync(task);
         _cache.Remove("all_tasks");

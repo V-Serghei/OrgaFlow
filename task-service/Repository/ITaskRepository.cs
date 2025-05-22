@@ -25,4 +25,8 @@ public interface ITaskRepository
     Task<ETask?> UpdateTask(ETask task, CancellationToken cancellationToken);
     Task<bool> DeleteTask(int id, CancellationToken cancellationToken);
     Task<IEnumerable<ITaskComponent>> GetAllTasksComponent(CancellationToken cancellationToken);
+    
+    Task<bool> SoftDeleteAsync(int id);
+    Task RestoreAsync(int id);
+    Task<IEnumerable<ETask>> GetTaskSubtreeAsync(int id);
 }

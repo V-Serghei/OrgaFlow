@@ -171,7 +171,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
 
     public Task<TaskDto?> GetTaskByIdAsync(int id) => _taskService.GetTaskByIdAsync(id);
 
-    public Task<TaskDto> CreateTaskAsync(TaskDto dto) => _taskService.CreateTaskAsync(dto);
+    public Task<TaskDto?> CreateTaskAsync(TaskDto dto) => _taskService.CreateTaskAsync(dto);
 
     public Task UpdateTaskAsync(int id, TaskDto dto)
     {

@@ -1,17 +1,37 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Undo2, Redo2 } from 'lucide-react';
 import { useCommandInvoker } from '@/lib/hooks/useCommandInvoker';
+import { useParams } from 'next/navigation';
+
+export const TaskRefreshContext = React.createContext(() => {});
 
 export function CommandBar() {
     const { undo, redo, canUndo, canRedo } = useCommandInvoker();
+    const refreshTask = useContext(TaskRefreshContext);
+
+    const handleUndo = async () => {
+        if (canUndo) {
+            await undo();
+            // Вызываем функцию обновления
+            refreshTask();
+        }
+    };
+
+    const handleRedo = async () => {
+        if (canRedo) {
+            await redo();
+            // Вызываем функцию обновления
+            refreshTask();
+        }
+    };
 
     return (
         <div className="flex items-center space-x-2 mb-4">
             <Button
                 variant="outline"
                 size="sm"
-                onClick={undo}
+                onClick={handleUndo}
                 disabled={!canUndo}
                 className="flex items-center"
             >
@@ -21,7 +41,7 @@ export function CommandBar() {
             <Button
                 variant="outline"
                 size="sm"
-                onClick={redo}
+                onClick={handleRedo}
                 disabled={!canRedo}
                 className="flex items-center"
             >

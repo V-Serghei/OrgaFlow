@@ -54,7 +54,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
         return result.Response.Task;
     }
     
-    public async Task<TaskDto> CreateTaskAsync(TaskDto dto)
+    public async Task<TaskDto?> CreateTaskAsync(TaskDto dto)
     {
         var request = new TaskOperationRequest
         {

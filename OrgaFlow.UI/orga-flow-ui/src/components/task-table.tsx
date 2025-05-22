@@ -1,10 +1,8 @@
-"use client"
+"use client";
 
-
-import React, { useEffect } from "react"
-import { useState } from "react"
-import { ChevronDown, ChevronRight, Edit, Trash2, Bell, MoreHorizontal, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import React, { useEffect, useState } from "react";
+import { ChevronDown, ChevronRight, Edit, Trash2, Bell, MoreHorizontal, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,8 +10,8 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+} from "@/components/ui/dropdown-menu";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -23,21 +21,20 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import api from "@/lib/api"
-import { apiNotify } from "@/lib/api-notify"
-import Link from "next/link"
-import { useToastNotify } from "@/hooks/use-toast-notify";
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/lib/api";
+import { apiNotify } from "@/lib/api-notify";
+import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
+import { useCommandInvoker } from "@/lib/hooks/useCommandInvoker";
+import { TaskCommandFactory } from "@/lib/commands/TaskCommandFactory";
 
-// Функция для подсветки текста при поиске
 function highlightText(text, searchTerm) {
     if (!searchTerm || !text) return text;
-
     const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
     const parts = text.split(regex);
-
     return (
         <>
             {parts.map((part, i) =>
@@ -53,126 +50,123 @@ function highlightText(text, searchTerm) {
     );
 }
 
-// Функция для экранирования специальных символов в регулярных выражениях
 function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTerm = "" }) {
-    const [deleteId, setDeleteId] = useState(null)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [expandedTasks, setExpandedTasks] = useState({})
-    const { toastNotify } = useToastNotify();
+    const [deleteId, setDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [expandedTasks, setExpandedTasks] = useState({});
+    const { toast } = useToast();
+    const { executeCommand } = useCommandInvoker();
+    const commandFactory = new TaskCommandFactory();
 
     const handleSubscribe = async (task) => {
         try {
-            await apiNotify.post("/subscribe", task)
-            toastNotify("Задача успешно создана!", "success");
+            await apiNotify.post("/subscribe", task);
+            toast({
+                title: "Успех",
+                description: "Подписка на задачу оформлена.",
+            });
         } catch (error) {
-            console.error("Error subscribing to notifications:", error)
-            toastNotify("Произошла ошибка", "error")
+            console.error("Error subscribing to notifications:", error);
+            toast({
+                title: "Ошибка",
+                description: "Не удалось подписаться на уведомления.",
+                variant: "destructive",
+            });
         }
-    }
+    };
 
     const handleDelete = async () => {
-        if (!deleteId) return
+        if (!deleteId) return;
 
-        setIsDeleting(true)
+        setIsDeleting(true);
         try {
-            await api.delete(`/${deleteId}`)
-            toastNotify("Task Deleted", "success")
-            onDelete()
+            const deleteCommand = commandFactory.createDeleteCommand(Number(deleteId));
+            await executeCommand(deleteCommand);
+
+            toast({
+                title: "Задача удалена",
+                description: "Задача успешно удалена.",
+            });
+
+            onDelete();
         } catch (error) {
-            console.error("Error deleting task:", error)
-            toastNotify("Deletion Failed",
-                "Could not delete the task.")
+            console.error("Error deleting task:", error);
+            toast({
+                title: "Ошибка удаления",
+                description: "Не удалось удалить задачу.",
+                variant: "destructive",
+            });
         } finally {
-            setIsDeleting(false)
-            setDeleteId(null)
+            setIsDeleting(false);
+            setDeleteId(null);
         }
-    }
+    };
 
     const toggleExpand = (taskId) => {
         setExpandedTasks(prev => ({
             ...prev,
             [taskId]: !prev[taskId]
-        }))
-    }
+        }));
+    };
 
     const getImportanceBadge = (importance) => {
         const variants = {
-            0: { variant: "outline", label: "Low" },
-            1: { variant: "secondary", label: "Medium" },
-            2: { variant: "default", label: "High" },
-            3: { variant: "destructive", label: "Critical" }
-        }
-
-        const { variant, label } = variants[importance] || variants[0]
-        return <Badge variant={variant}>{label}</Badge>
-    }
+            0: { variant: "outline", label: "Низкий" },
+            1: { variant: "secondary", label: "Средний" },
+            2: { variant: "default", label: "Высокий" },
+            3: { variant: "destructive", label: "Критический" }
+        };
+        const { variant, label } = variants[importance] || variants[0];
+        return <Badge variant={variant}>{label}</Badge>;
+    };
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            0: { variant: "default", label: "To Do" },
-            1: { variant: "success", label: "Completed" },
-            2: { variant: "warning", label: "In Progress" }
-        }
+            0: { variant: "default", label: "К выполнению" },
+            1: { variant: "success", label: "Завершено" },
+            2: { variant: "warning", label: "В процессе" }
+        };
+        const { variant, label } = statusMap[status] || statusMap[0];
+        return <Badge variant={variant}>{label}</Badge>;
+    };
 
-        const { variant, label } = statusMap[status] || statusMap[0]
-        return <Badge variant={variant}>{label}</Badge>
-    }
-
-    // Возвращает цвет фона в зависимости от уровня вложенности
     const getRowBackgroundColor = (level) => {
         if (level === 0) return "";
-        const colors = [
-            "bg-muted/20",
-            "bg-muted/30",
-            "bg-muted/40",
-            "bg-muted/50"
-        ];
+        const colors = ["bg-muted/20", "bg-muted/30", "bg-muted/40", "bg-muted/50"];
         return colors[Math.min(level - 1, colors.length - 1)];
     };
 
-    // Автоматически раскрываем задачи, соответствующие поисковому запросу
     useEffect(() => {
         if (!searchTerm) return;
-
         const expandMatchingTasks = (taskList) => {
             taskList.forEach(task => {
-                // Проверяем, соответствует ли текущая задача поисковому запросу
                 const matches =
                     task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-
-                // Если задача соответствует или у неё есть дочерние задачи - раскрываем её
                 if (matches && task.children && task.children.length > 0) {
                     setExpandedTasks(prev => ({
                         ...prev,
                         [task.id]: true
                     }));
                 }
-
-                // Рекурсивно проверяем дочерние задачи
                 if (task.children && task.children.length > 0) {
                     expandMatchingTasks(task.children);
                 }
             });
         };
-
         expandMatchingTasks(tasks);
     }, [searchTerm, tasks]);
 
-    // Рендер отдельной задачи с учетом вложенности
     const renderTaskRow = (task, level = 0) => {
         const hasChildren = task.children && task.children.length > 0;
         const isExpanded = expandedTasks[task.id];
-        const indentWidth = level * 16; // 16px на каждый уровень вложенности
-
-        // Вместо использования фрагментов, возвращаем массив элементов с ключами
+        const indentWidth = level * 16;
         const rows = [];
 
-        // Добавляем основную строку задачи с ключом
         rows.push(
             <TableRow
                 key={`task-${task.id}`}
@@ -180,18 +174,13 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
             >
                 <TableCell className="font-medium p-2">
                     <div className="flex items-center">
-                        {/* Визуальные индикаторы иерархии */}
                         {level > 0 && (
                             <div
                                 className="absolute left-0 top-0 bottom-0 border-l-2 border-muted-foreground/20"
                                 style={{ left: `${(level - 1) * 16 + 4}px`, height: '100%' }}
                             ></div>
                         )}
-
-                        {/* Отступы для вложенности */}
                         <div style={{ width: `${indentWidth}px` }} className="flex-shrink-0"></div>
-
-                        {/* Кнопка раскрытия/сворачивания */}
                         {hasChildren ? (
                             <Button
                                 variant="ghost"
@@ -199,20 +188,14 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                                 className="h-5 w-5 p-0 mr-2 rounded-full"
                                 onClick={() => toggleExpand(task.id)}
                             >
-                                {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                )}
+                                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </Button>
                         ) : (
-                            <div className="w-7"></div> // Пространство вместо кнопки для выравнивания
+                            <div className="w-7"></div>
                         )}
-
                         <span>{task.id}</span>
                     </div>
                 </TableCell>
-
                 <TableCell>
                     <Link
                         href={`/task/${task.id}`}
@@ -221,44 +204,41 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                         {searchTerm ? highlightText(task.name, searchTerm) : task.name}
                     </Link>
                 </TableCell>
-
                 <TableCell className="hidden max-w-[250px] truncate md:table-cell">
                     {searchTerm
-                        ? highlightText(task.description || "No description", searchTerm)
-                        : (task.description || "No description")
+                        ? highlightText(task.description || "Описание отсутствует", searchTerm)
+                        : (task.description || "Описание отсутствует")
                     }
                 </TableCell>
-
                 <TableCell className="hidden md:table-cell">
                     <div className="flex gap-2">
                         {getStatusBadge(task.status)}
                         {getImportanceBadge(task.importance)}
                     </div>
                 </TableCell>
-
                 <TableCell className="text-right">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
                                 <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
+                                <span className="sr-only">Открыть меню</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuLabel>Действия</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
                                 <Link href={`/task/${task.id}`}>
                                     <Eye className="mr-2 h-4 w-4" />
-                                    View
+                                    Просмотр
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onEdit(task)}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit
+                                Редактировать
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleSubscribe(task)}>
                                 <Bell className="mr-2 h-4 w-4" />
-                                Notify
+                                Подписаться
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -266,7 +246,7 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                                 onClick={() => setDeleteId(task.id)}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                Удалить
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -274,7 +254,6 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
             </TableRow>
         );
 
-        // Если есть дочерние элементы и они развернуты, добавляем их в массив
         if (hasChildren && isExpanded) {
             task.children.forEach((child) => {
                 const childRows = renderTaskRow(child, level + 1);
@@ -302,13 +281,12 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
             return (
                 <TableRow>
                     <TableCell colSpan={5} className="text-center py-6">
-                        <p className="text-sm text-muted-foreground">No tasks found</p>
+                        <p className="text-sm text-muted-foreground">Задачи не найдены</p>
                     </TableCell>
                 </TableRow>
             );
         }
 
-        // Собираем все строки в один плоский массив
         const allRows = [];
         tasks.forEach(task => {
             const taskRows = renderTaskRow(task);
@@ -325,10 +303,10 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                     <TableHeader>
                         <TableRow>
                             <TableHead>ID</TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead className="hidden md:table-cell">Description</TableHead>
-                            <TableHead className="hidden md:table-cell">Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead>Название</TableHead>
+                            <TableHead className="hidden md:table-cell">Описание</TableHead>
+                            <TableHead className="hidden md:table-cell">Статус</TableHead>
+                            <TableHead className="text-right">Действия</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -336,23 +314,22 @@ export function TaskTable({ tasks, onEdit, onDelete, isLoading = false, searchTe
                     </TableBody>
                 </Table>
             </div>
-
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the task.
+                            Это действие удалит задачу. Вы можете отменить это действие с помощью кнопки "Отменить".
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDelete}
                             disabled={isDeleting}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {isDeleting ? "Deleting..." : "Delete"}
+                            {isDeleting ? "Удаление..." : "Удалить"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

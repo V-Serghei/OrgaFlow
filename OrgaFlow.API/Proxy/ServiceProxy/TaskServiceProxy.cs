@@ -37,7 +37,7 @@ public class TaskServiceProxy : ITaskService
         return await _realService.GetTaskByIdAsync(id);
     }
     
-    public async Task<TaskDto> CreateTaskAsync(TaskDto task) {
+    public async Task<TaskDto?> CreateTaskAsync(TaskDto task) {
         EnsureAuthenticated();
         return await _realService.CreateTaskAsync(task);
     }

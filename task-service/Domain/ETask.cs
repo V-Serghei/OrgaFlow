@@ -26,6 +26,7 @@ public class ETask
         public string AssignedTo { get; set; } = string.Empty;
         public string CreatedBy { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; }
     
         // Collections
         public List<TaskParticipant> Participants { get; set; } = new List<TaskParticipant>();

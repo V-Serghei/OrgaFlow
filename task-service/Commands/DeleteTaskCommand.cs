@@ -7,40 +7,44 @@ public class DeleteTaskCommand : ICommand
 {
     private readonly int _taskId;
     private readonly ITaskRepository _repository;
-    private ETask _deletedTask;
+    private IEnumerable<ETask> _deletedTasks; // Храним поддерево задач
 
     public DeleteTaskCommand(int taskId, ITaskRepository repository)
     {
         _taskId = taskId;
         _repository = repository;
+        _deletedTasks = new List<ETask>();
     }
 
     public async Task<bool> CanExecute()
     {
         var task = await _repository.GetByIdAsync(_taskId);
-        return task != null;
+        return task != null && !task.IsDeleted;
     }
 
     public async Task<object> Execute()
     {
         if (!await CanExecute())
             throw new InvalidOperationException(
-                $"Cannot execute delete task command. Task with ID {_taskId} not found.");
+                $"Cannot execute delete task command. Task with ID {_taskId} not found or already deleted.");
 
-        // Store the task before deletion for potential undo
-        _deletedTask = await _repository.GetByIdAsync(_taskId);
+        // Сохраняем поддерево задач перед удалением
+        _deletedTasks = await _repository.GetTaskSubtreeAsync(_taskId);
 
-        await _repository.DeleteAsync(_taskId);
+        // Выполняем мягкое удаление
+        await _repository.SoftDeleteAsync(_taskId);
         return true;
     }
 
     public async Task Undo()
     {
-        if (_deletedTask != null)
+        if (_deletedTasks.Any())
         {
-            // Reset the ID to avoid conflicts
-            _deletedTask.Id = 0;
-            await _repository.AddAsync(_deletedTask);
+            // Восстанавливаем все задачи поддерева
+            foreach (var task in _deletedTasks)
+            {
+                await _repository.RestoreAsync(task.Id);
+            }
         }
     }
 }

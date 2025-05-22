@@ -1,17 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft, Calendar, Clock, Edit2, Trash2, CheckCircle, Users,
     MapPin, AlertCircle, ArrowUpRight, Repeat, Bell, Bookmark
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,100 +21,67 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger
-} from "@/components/ui/alert-dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { cn } from "@/lib/utils"
-import api from "@/lib/api"
-import Link from "next/link"
-import { format, formatDistanceToNow, isAfter, parseISO } from "date-fns"
-
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import api from "@/lib/api";
+import Link from "next/link";
+import { format, formatDistanceToNow, isAfter, parseISO } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { useCommandInvoker } from "@/lib/hooks/useCommandInvoker";
+import { TaskCommandFactory } from "@/lib/commands/TaskCommandFactory";
+import { CommandBar, TaskRefreshContext } from '@/components/CommandBar';
+import { Skeleton } from "@/components/ui/skeleton";
 export default function TaskDetail() {
-    const params = useParams()
-    const router = useRouter()
-    const { id } = params
-    const [task, setTask] = useState(null)
-    const [error, setError] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [isDeleting, setIsDeleting] = useState(false)
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const params = useParams();
+    const router = useRouter();
+    const { toast } = useToast();
+    const { id } = params;
+    const { executeCommand } = useCommandInvoker();
+    const commandFactory = new TaskCommandFactory();
 
-    const currentDate = new Date('2025-04-25T12:57:59Z')
-    const currentUser = 'V-Serghei'
+    const [task, setTask] = useState(null);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+    const currentUser = 'V-Serghei';
+    const safeFormat = (dateString, formatString) => {
+        try {
+            if (!dateString) return "Неизвестно";
+
+            // Отладочная информация
+            console.log("Форматируемая дата:", dateString, typeof dateString);
+
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "Неизвестно";
+            return format(date, formatString);
+        } catch (e) {
+            console.error("Error formatting date with format():", e, dateString);
+            return "Неизвестно";
+        }
+    };
+    const safeFormatDistanceToNow = (dateString) => {
+        try {
+            if (!dateString) return "Неизвестно";
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return "Неизвестно";
+            return formatDistanceToNow(date, { addSuffix: true });
+        } catch (e) {
+            console.error("Error formatting date:", e, dateString);
+            return "Неизвестно";
+        }
+    };
     useEffect(() => {
         if (id) {
             const fetchTask = async () => {
                 try {
-                    // In a real application, you would fetch from your API
-                    // For demo purposes, let's simulate fetching a task with richer data
-
-                    // Simulate API delay
-                    await new Promise(resolve => setTimeout(resolve, 500))
-
-                    // This is a mock task with all the expected fields
-                    // In a real app, this would come from your API: const response = await api.get(`/${id}`)
-                    const mockTask = {
-                        id: id,
-                        name: "OrgaFlow Sprint Planning",
-                        description: "Define tasks for the upcoming two-week sprint. We need to focus on the task management module and the calendar integration. Make sure to prepare user stories and acceptance criteria for all planned features.\n\nKey points to discuss:\n- Task prioritization\n- Resource allocation\n- Timeline estimation",
-                        type: "meeting", // task, meeting, deadline, presentation, personal
-                        priority: "high", // low, medium, high, critical
-                        status: 2, // 0: To Do, 1: Completed, 2: In Progress
-                        startDate: "2025-04-22T09:00:00Z",
-                        endDate: "2025-04-22T10:30:00Z",
-                        isAllDay: false,
-                        isRecurring: true,
-                        recurrencePattern: "biweekly",
-                        location: "Main Conference Room",
-                        participants: [
-                            { id: 1, name: "Serghei V.", avatar: "/avatars/serghei.png" },
-                            { id: 2, name: "Alex K.", avatar: "/avatars/alex.png" },
-                            { id: 3, name: "Maria D.", avatar: "/avatars/maria.png" }
-                        ],
-                        assignedTo: "V-Serghei",
-                        tags: [
-                            { id: 1, name: "Planning", color: "bg-blue-100 text-blue-800" },
-                            { id: 2, name: "Sprint", color: "bg-green-100 text-green-800" },
-                            { id: 3, name: "High Priority", color: "bg-amber-100 text-amber-800" }
-                        ],
-                        relatedTasks: [
-                            { id: 101, name: "Task Management API Development", status: 2 },
-                            { id: 102, name: "Calendar Integration", status: 0 }
-                        ],
-                        comments: [
-                            {
-                                id: 1,
-                                author: "Alex K.",
-                                avatar: "/avatars/alex.png",
-                                text: "I've prepared the sprint backlog items. Let me know if there's anything I missed.",
-                                createdAt: "2025-04-20T15:30:00Z"
-                            },
-                            {
-                                id: 2,
-                                author: "V-Serghei",
-                                avatar: "/avatars/serghei.png",
-                                text: "Added some additional tasks related to the API authorization.",
-                                createdAt: "2025-04-21T09:15:00Z"
-                            }
-                        ],
-                        history: [
-                            { action: "created", timestamp: "2025-04-18T10:00:00Z", user: "V-Serghei" },
-                            { action: "updated", field: "description", timestamp: "2025-04-19T14:20:00Z", user: "V-Serghei" },
-                            { action: "added participant", participant: "Maria D.", timestamp: "2025-04-20T11:35:00Z", user: "V-Serghei" }
-                        ],
-                        createdAt: "2025-04-18T10:00:00Z",
-                        updatedAt: "2025-04-21T09:15:00Z",
-                        createdBy: "V-Serghei"
-                    };
-
-                    setTask(mockTask);
+                    const response = await api.get(`${id}`);
+                    setTask(response.data);
                 } catch (error) {
                     console.error("Error fetching task:", error);
-                    if (error.response && error.response.status === 404) {
-                        setError("Task not found");
-                    } else {
-                        setError("Error loading task");
-                    }
+                    setError(error.response?.status === 404 ? "Задача не найдена" : "Ошибка загрузки задачи");
                 } finally {
                     setLoading(false);
                 }
@@ -123,17 +89,36 @@ export default function TaskDetail() {
             fetchTask();
         }
     }, [id]);
-
+    const refreshTaskData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await api.get(`${id}`);
+            setTask(response.data);
+        } catch (error) {
+            console.error("Error refreshing task:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
-            // In a real application, this would be an API call
-            // await api.delete(`/${id}`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+            const deleteCommand = commandFactory.createDeleteCommand(Number(id));
+            await executeCommand(deleteCommand);
+
+            toast({
+                title: "Задача удалена",
+                description: "Задача успешно удалена.",
+            });
+
             router.push('/tasks');
         } catch (error) {
             console.error("Error deleting task:", error);
-            setError("Failed to delete task");
+            toast({
+                title: "Ошибка удаления",
+                description: "Не удалось удалить задачу.",
+                variant: "destructive",
+            });
         } finally {
             setIsDeleting(false);
             setShowDeleteDialog(false);
@@ -142,26 +127,32 @@ export default function TaskDetail() {
 
     const handleComplete = async () => {
         try {
-            // In a real application, this would be an API call
-            // await api.patch(`/${id}`, { status: task.status === 1 ? 0 : 1 });
+            const updatedTask = { ...task, status: task.status === 1 ? 0 : 1 };
+            const updateCommand = commandFactory.createUpdateCommand(Number(id), updatedTask);
+            await executeCommand(updateCommand);
 
-            // For demo, just update the local state
-            setTask({
-                ...task,
-                status: task.status === 1 ? 0 : 1
+            setTask(updatedTask);
+
+            toast({
+                title: task.status === 1 ? "Задача помечена как незавершённая" : "Задача завершена",
+                description: "Статус задачи обновлён.",
             });
         } catch (error) {
             console.error("Error updating task status:", error);
+            toast({
+                title: "Ошибка обновления",
+                description: "Не удалось обновить статус задачи.",
+                variant: "destructive",
+            });
         }
     };
 
-    // Helper functions for rendering
     const getStatusLabel = (status) => {
         switch (status) {
-            case 0: return "To Do";
-            case 1: return "Completed";
-            case 2: return "In Progress";
-            default: return "Unknown";
+            case 0: return "К выполнению";
+            case 1: return "Завершено";
+            case 2: return "В процессе";
+            default: return "Неизвестно";
         }
     };
 
@@ -176,77 +167,66 @@ export default function TaskDetail() {
 
     const getTypeIcon = (type) => {
         switch (type) {
-            case 'meeting':
-                return <Users className="h-5 w-5 text-blue-500" />;
-            case 'deadline':
-                return <AlertCircle className="h-5 w-5 text-red-500" />;
-            case 'presentation':
-                return <div className="text-amber-500 text-lg">📊</div>;
-            case 'personal':
-                return <div className="text-purple-500 text-lg">🌱</div>;
-            case 'task':
-            default:
-                return <div className="text-green-500 text-lg">✓</div>;
+            case 'meeting': return <Users className="h-5 w-5 text-blue-500" />;
+            case 'deadline': return <AlertCircle className="h-5 w-5 text-red-500" />;
+            case 'presentation': return <div className="text-amber-500 text-lg">📊</div>;
+            case 'personal': return <div className="text-purple-500 text-lg">🌱</div>;
+            case 'task': default: return <div className="text-green-500 text-lg">✓</div>;
         }
     };
 
     const getPriorityBadge = (priority) => {
         const styles = {
-            low: "bg-slate-100 text-slate-800",
-            medium: "bg-blue-100 text-blue-800",
-            high: "bg-amber-100 text-amber-800",
-            critical: "bg-red-100 text-red-800"
+            0: "bg-slate-100 text-slate-800",
+            1: "bg-blue-100 text-blue-800",
+            2: "bg-amber-100 text-amber-800",
+            3: "bg-red-100 text-red-800"
         };
+        const labels = { 0: "Низкий", 1: "Средний", 2: "Высокий", 3: "Критический" };
 
         return (
             <Badge className={cn(styles[priority] || "")}>
-                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                {labels[priority] || priority}
             </Badge>
         );
     };
 
     const formatDateTime = (dateStr, isAllDay = false) => {
-        if (!dateStr) return null;
-
-        const date = new Date(dateStr);
-
-        if (isAllDay) {
-            return format(date, "PPP");
-        }
-
-        return format(date, "PPP 'at' p");
+        if (!dateStr) return "Не указано";
+        return isAllDay ? safeFormat(dateStr, "PPP") : safeFormat(dateStr, "PPP 'в' p");
     };
 
     const isOverdue = (task) => {
-        if (!task.endDate) return false;
+        if (!task?.endDate) return false;
         const endDate = new Date(task.endDate);
+        const currentDate = new Date();
         return isAfter(currentDate, endDate) && task.status !== 1;
     };
 
     const isAssignedToCurrentUser = (task) => {
-        return task.assignedTo === currentUser;
+        return task?.assignedTo === currentUser;
     };
 
     if (error) {
         return (
             <Card className="mx-auto max-w-3xl">
                 <CardHeader>
-                    <CardTitle className="text-destructive">Error</CardTitle>
+                    <CardTitle className="text-destructive">Ошибка</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p>{error}</p>
                     <Button asChild className="mt-4">
                         <Link href="/tasks">
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Tasks
+                            Назад к задачам
                         </Link>
                     </Button>
                 </CardContent>
             </Card>
-        )
+        );
     }
 
-    if (loading) {
+    if (loading || !task) {
         return (
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -265,63 +245,26 @@ export default function TaskDetail() {
                     </CardContent>
                 </Card>
             </div>
-        )
+        );
     }
-
+   
     return (
+        <TaskRefreshContext.Provider value={refreshTaskData}>
+            <div className="space-y-6">
+                
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <Button variant="ghost" size="sm" asChild>
                     <Link href="/tasks">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Tasks
+                        Назад к задачам
                     </Link>
                 </Button>
-                <div className="flex gap-2">
-                    <Button
-                        variant={task.status === 1 ? "outline" : "default"}
-                        size="sm"
-                        onClick={handleComplete}
-                    >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        {task.status === 1 ? "Mark Incomplete" : "Mark Complete"}
-                    </Button>
-
-                    <Button variant="outline" size="icon" onClick={() => router.push(`/task/${id}/edit`)}>
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
-
-                    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon" className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete this task. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={handleDelete}
-                                    disabled={isDeleting}
-                                >
-                                    {isDeleting ? "Deleting..." : "Delete"}
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
+                <CommandBar />
             </div>
 
             <div className="grid gap-6 md:grid-cols-[2fr_1fr]">
                 <div className="space-y-6">
-                    {/* Main Task Card */}
                     <Card>
                         <CardHeader>
                             <div className="flex flex-wrap items-start justify-between gap-2">
@@ -334,23 +277,21 @@ export default function TaskDetail() {
                                     </div>
                                     <CardDescription>
                                         {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
-                                        {task.isRecurring && " • Recurring"}
+                                        {task.isRecurring && " • Повторяющаяся"}
                                     </CardDescription>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     <Badge variant={getStatusBadgeVariant(task.status)}>
                                         {getStatusLabel(task.status)}
                                     </Badge>
-                                    {getPriorityBadge(task.priority)}
+                                    {getPriorityBadge(task.importance)}
                                     {isOverdue(task) && (
-                                        <Badge variant="destructive">Overdue</Badge>
+                                        <Badge variant="destructive">Просрочено</Badge>
                                     )}
                                 </div>
                             </div>
                         </CardHeader>
-
                         <CardContent className="space-y-6">
-                            {/* Tags */}
                             {task.tags && task.tags.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
                                     {task.tags.map(tag => (
@@ -360,19 +301,15 @@ export default function TaskDetail() {
                                     ))}
                                 </div>
                             )}
-
-                            {/* Description */}
                             <div>
-                                <h3 className="text-sm font-medium mb-2">Description</h3>
+                                <h3 className="text-sm font-medium mb-2">Описание</h3>
                                 <div className="rounded-md bg-muted/50 p-4 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {task.description || "No description available"}
+                                    {task.description || "Описание отсутствует"}
                                 </div>
                             </div>
-
-                            {/* Date and Time */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-1">
-                                    <h3 className="text-sm font-medium">Start</h3>
+                                    <h3 className="text-sm font-medium">Начало</h3>
                                     <div className="flex items-center text-sm">
                                         <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                                         {formatDateTime(task.startDate, task.isAllDay)}
@@ -380,7 +317,7 @@ export default function TaskDetail() {
                                 </div>
                                 {task.endDate && (
                                     <div className="space-y-1">
-                                        <h3 className="text-sm font-medium">End</h3>
+                                        <h3 className="text-sm font-medium">Окончание</h3>
                                         <div className="flex items-center text-sm">
                                             <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
                                             {formatDateTime(task.endDate, task.isAllDay)}
@@ -388,29 +325,23 @@ export default function TaskDetail() {
                                     </div>
                                 )}
                             </div>
-
-                            {/* Recurring Pattern */}
                             {task.isRecurring && task.recurrencePattern && (
                                 <div className="flex items-center">
                                     <Repeat className="mr-2 h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm">
-                                        Repeats {task.recurrencePattern.charAt(0).toUpperCase() + task.recurrencePattern.slice(1)}
+                                        Повторяется {task.recurrencePattern.charAt(0).toUpperCase() + task.recurrencePattern.slice(1)}
                                     </span>
                                 </div>
                             )}
-
-                            {/* Location */}
                             {task.location && (
                                 <div className="flex items-center">
                                     <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm">{task.location}</span>
                                 </div>
                             )}
-
-                            {/* Participants */}
                             {task.participants && task.participants.length > 0 && (
                                 <div className="space-y-2">
-                                    <h3 className="text-sm font-medium">Participants</h3>
+                                    <h3 className="text-sm font-medium">Участники</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {task.participants.map(participant => (
                                             <div key={participant.id} className="flex items-center gap-2 bg-muted/60 rounded-full px-3 py-1">
@@ -424,11 +355,9 @@ export default function TaskDetail() {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Related Tasks */}
                             {task.relatedTasks && task.relatedTasks.length > 0 && (
                                 <div className="space-y-2">
-                                    <h3 className="text-sm font-medium">Related Tasks</h3>
+                                    <h3 className="text-sm font-medium">Связанные задачи</h3>
                                     <div className="space-y-2">
                                         {task.relatedTasks.map(relatedTask => (
                                             <div
@@ -450,26 +379,22 @@ export default function TaskDetail() {
                                 </div>
                             )}
                         </CardContent>
-
                         <Separator />
-
                         <CardFooter className="flex justify-between py-4">
                             <div className="text-sm text-muted-foreground">
-                                Assigned to: <span className="font-medium">{task.assignedTo}</span>
-                                {isAssignedToCurrentUser(task) && <Badge variant="outline" className="ml-2">You</Badge>}
+                                Назначено: <span className="font-medium">{task.assignedTo}</span>
+                                {isAssignedToCurrentUser(task) && <Badge variant="outline" className="ml-2">Вы</Badge>}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Clock className="h-4 w-4" />
-                                Updated {formatDistanceToNow(new Date(task.updatedAt))} ago
+                                Обновлено {safeFormatDistanceToNow(task.updatedAt)} назад
                             </div>
                         </CardFooter>
                     </Card>
-
-                    {/* Comments Section */}
                     {task.comments && task.comments.length > 0 && (
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">Comments</CardTitle>
+                                <CardTitle className="text-lg">Комментарии</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {task.comments.map(comment => (
@@ -482,14 +407,13 @@ export default function TaskDetail() {
                                             <div>
                                                 <div className="font-medium text-sm">{comment.author}</div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    {formatDistanceToNow(new Date(comment.createdAt))} ago
+                                                    {safeFormatDistanceToNow(task.updatedAt)} назад
                                                 </div>
                                             </div>
                                         </div>
                                         <p className="text-sm pl-10">{comment.text}</p>
                                     </div>
                                 ))}
-
                                 <div className="flex items-center gap-2 mt-4">
                                     <Avatar className="h-8 w-8">
                                         <AvatarFallback>VS</AvatarFallback>
@@ -497,7 +421,7 @@ export default function TaskDetail() {
                                     <div className="relative flex-1">
                                         <input
                                             type="text"
-                                            placeholder="Add a comment..."
+                                            placeholder="Добавить комментарий..."
                                             className="w-full rounded-md border px-3 py-2 text-sm"
                                         />
                                     </div>
@@ -506,59 +430,97 @@ export default function TaskDetail() {
                         </Card>
                     )}
                 </div>
-
                 <div className="space-y-6">
-                    {/* Task Actions */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Actions</CardTitle>
+                            <CardTitle className="text-lg">Действия</CardTitle>
                         </CardHeader>
                         <CardContent className="grid grid-cols-2 gap-2">
                             <Button className="w-full">
                                 <Bell className="mr-2 h-4 w-4" />
-                                Subscribe
+                                Подписаться
                             </Button>
                             <Button variant="outline" className="w-full">
                                 <Bookmark className="mr-2 h-4 w-4" />
-                                Save
+                                Сохранить
                             </Button>
+                            <Button
+                                variant={task.status === 1 ? "outline" : "default"}
+                                size="sm"
+                                onClick={handleComplete}
+                                className="col-span-2"
+                            >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                {task.status === 1 ? "Пометить как незавершённое" : "Пометить как завершённое"}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/task/${id}/edit`)}
+                                className="col-span-2"
+                            >
+                                <Edit2 className="mr-2 h-4 w-4" />
+                                Редактировать
+                            </Button>
+                            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="col-span-2 text-destructive"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Удалить
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Это действие удалит задачу. Вы можете отменить это действие с помощью кнопки "Отменить".
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                            onClick={handleDelete}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? "Удаление..." : "Удалить"}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </CardContent>
                     </Card>
-
-                    {/* Task Details */}
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">Details</CardTitle>
+                            <CardTitle className="text-lg">Детали</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                <div className="text-muted-foreground">Created by</div>
-                                <div className="font-medium">{task.createdBy}</div>
-
-                                <div className="text-muted-foreground">Created</div>
-                                <div>{format(new Date(task.createdAt), "PPP")}</div>
-
-                                <div className="text-muted-foreground">Last updated</div>
-                                <div>{format(new Date(task.updatedAt), "PPP")}</div>
-
-                                <div className="text-muted-foreground">Status</div>
+                                <div className="text-muted-foreground">Создано</div>
+                                <div>{task.createdBy}</div>
+                                <div className="text-muted-foreground">Дата создания</div>
+                                <div>{safeFormat(task.createdAt, "PPP")}</div>
+                                <div className="text-muted-foreground">Последнее обновление</div>
+                                <div>{safeFormat(task.createdAt, "PPP")}</div>
+                                <div className="text-muted-foreground">Статус</div>
                                 <div>
                                     <Badge variant={getStatusBadgeVariant(task.status)}>
                                         {getStatusLabel(task.status)}
                                     </Badge>
                                 </div>
-
-                                <div className="text-muted-foreground">Priority</div>
-                                <div>{getPriorityBadge(task.priority)}</div>
+                                <div className="text-muted-foreground">Приоритет</div>
+                                <div>{getPriorityBadge(task.importance)}</div>
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Task History */}
                     {task.history && task.history.length > 0 && (
                         <Card>
                             <CardHeader>
-                                <CardTitle className="text-lg">History</CardTitle>
+                                <CardTitle className="text-lg">История</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-3 max-h-[300px] overflow-y-auto">
                                 {task.history.map((event, index) => (
@@ -579,7 +541,7 @@ export default function TaskDetail() {
                                                 </span>
                                             </div>
                                             <time className="text-xs text-muted-foreground">
-                                                {format(new Date(event.timestamp), "PPP 'at' p")}
+                                                {safeFormat(event.timestamp, "PPP 'в' p")}
                                             </time>
                                         </div>
                                     </div>
@@ -590,5 +552,7 @@ export default function TaskDetail() {
                 </div>
             </div>
         </div>
-    )
+            </div>
+        </TaskRefreshContext.Provider>
+    );
 }

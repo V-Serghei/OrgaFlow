@@ -20,7 +20,7 @@ public interface IOrgaFlowFacade
     // Task Facade
     Task<IEnumerable<TaskDto>> GetAllTasksAsync();
     Task<TaskDto?> GetTaskByIdAsync(int id);
-    Task<TaskDto> CreateTaskAsync(TaskDto dto);
+    Task<TaskDto?> CreateTaskAsync(TaskDto dto);
     Task UpdateTaskAsync(int id, TaskDto dto);
     Task DeleteTaskAsync(int id);
     Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null);

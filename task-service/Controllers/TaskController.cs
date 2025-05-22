@@ -26,7 +26,7 @@ namespace task_service.Controllers
         private readonly TaskCommandFactory _commandFactory;
 
         public TaskController(
-            IMediator mediator, 
+            IMediator mediator,
             SortContext sortContext,
             ILogger<TaskController> logger,
             ITaskRepository repository,
@@ -39,6 +39,7 @@ namespace task_service.Controllers
             _repository = repository;
             _commandInvoker = commandInvoker;
             _commandFactory = commandFactory;
+
         }
 
         [HttpGet("{id}")]
@@ -97,8 +98,9 @@ namespace task_service.Controllers
             try
             {
                 _logger.LogInformation("Creating new task: {TaskName}", task.Name);
-                
-                var taskDto = new TaskDto{
+
+                var taskDto = new TaskDto
+                {
                     Id = 0,
                     Name = task.Name,
                     Description = task.Description,
@@ -116,13 +118,8 @@ namespace task_service.Controllers
                     Type = task.Type,
                     AssignedTo = task.AssignedTo,
                     ParentId = task.ParentId,
-                    
                     CreatedAt = task.CreatedAt,
                     CreatedBy = task.CreatedBy,
-                    
-                    
-                    
-                    
                 };
                 taskDto.Participants = task.Participants.Select(p => new ParticipantDto
                 {
@@ -136,11 +133,11 @@ namespace task_service.Controllers
                     Name = t.Name,
                     Color = t.Color
                 }).ToList();
-                
-                var command = new CreateTaskCommand(task.Adapt<TaskDto>(), _repository);
+
+                var command = new CreateTaskCommand(taskDto, _repository);
                 var result = await _commandInvoker.ExecuteCommand(command);
                 var createdTask = (ETask)result;
-                
+
                 _logger.LogInformation("Task created successfully with ID: {TaskId}", createdTask.Id);
                 return CreatedAtAction(nameof(GetTaskById), new { id = createdTask.Id }, createdTask);
             }
@@ -163,7 +160,7 @@ namespace task_service.Controllers
                 var command = new UpdateTaskCommand(task.Adapt<TaskDto>(), _repository);
                 var result = await _commandInvoker.ExecuteCommand(command);
                 var updatedTask = (ETask)result;
-                
+
                 _logger.LogInformation("Task updated successfully: {TaskId}", id);
                 return Ok(updatedTask);
             }
@@ -182,7 +179,7 @@ namespace task_service.Controllers
                 _logger.LogInformation("Deleting task with ID: {TaskId}", id);
                 var command = new DeleteTaskCommand(id, _repository);
                 await _commandInvoker.ExecuteCommand(command);
-                
+
                 _logger.LogInformation("Task deleted successfully: {TaskId}", id);
                 return NoContent();
             }
@@ -192,20 +189,21 @@ namespace task_service.Controllers
                 return NotFound(ex.Message);
             }
         }
-        
+
         [HttpPost("undo")]
         public async Task<IActionResult> Undo()
         {
-            try {
+            try
+            {
                 _logger.LogInformation("Attempting to undo the last operation");
                 var success = await _commandInvoker.UndoCommand();
-                
+
                 if (!success)
                 {
                     _logger.LogInformation("Nothing to undo");
                     return BadRequest("Nothing to undo");
                 }
-                
+
                 _logger.LogInformation("Operation undone successfully");
                 return Ok(new { message = "Action undone successfully" });
             }
@@ -215,20 +213,21 @@ namespace task_service.Controllers
                 return StatusCode(500, "An error occurred while undoing the operation");
             }
         }
-        
+
         [HttpPost("redo")]
         public async Task<IActionResult> Redo()
         {
-            try {
+            try
+            {
                 _logger.LogInformation("Attempting to redo the last undone operation");
                 var success = await _commandInvoker.RedoCommand();
-                
+
                 if (!success)
                 {
                     _logger.LogInformation("Nothing to redo");
                     return BadRequest("Nothing to redo");
                 }
-                
+
                 _logger.LogInformation("Operation redone successfully");
                 return Ok(new { message = "Action redone successfully" });
             }

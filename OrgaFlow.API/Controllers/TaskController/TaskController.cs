@@ -79,7 +79,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
         {
             try
             {
-                return Ok(await _facade.GetTaskByIdAsync(id));
+                var task = await _facade.GetTaskByIdAsync(id);
+                return Ok(task);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -128,7 +129,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
                     Attachments: new List<AttachmentDto>()
                 );
 
-            return Ok(await _facade.CreateTaskAsync(task));
+                var result = await _facade.CreateTaskAsync(task);
+            return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -137,16 +139,49 @@ namespace OrgaFlow.Application.Controllers.TaskController
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskDto taskDto)
+        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskUpdateRequest taskDto)
         {
             try
             {
-                if (taskDto.Id != id)
-                {
-                    return BadRequest("Task ID mismatch.");
-                }
+                
+                var task = new TaskDto(
+                    Id: id,
+                    Name: taskDto.Name,
+                    Description: taskDto.Description,
+                    Status: taskDto.Status,
+                    Importance: taskDto.Importance,
+                    Type: taskDto.Type,
+                    CreatedAt: DateTime.UtcNow,
+                    CreatedBy: taskDto.UpdatedBy,
+                    AssignedTo: taskDto.AssignedTo,
+                    StartDate: taskDto.StartDate,
+                    EndDate: taskDto.EndDate,
+                    StartTime: taskDto.StartTime,
+                    EndTime: taskDto.EndTime,
+                    Location: taskDto.Location,
+                    IsAllDay: taskDto.IsAllDay,
+                    IsRecurring: taskDto.IsRecurring,
+                    RecurrencePattern: taskDto.RecurrencePattern,
+                    Notify: taskDto.Notify,
+                    ParentId: taskDto.ParentId,
+                    Children: new List<TaskDto>(),
+                    Participants: taskDto.Participants.Select(p => new ParticipantDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Avatar = p.Avatar
+                    }).ToList(),
+                    Tags: taskDto.Tags.Select(t => new TagDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Color = t.Color
+                    }).ToList(),
+                    Attachments: new List<AttachmentDto>()
+                );
 
-                await _facade.UpdateTaskAsync(id, taskDto);
+
+                await _facade.UpdateTaskAsync(id, task);
                 return NoContent();
             }
             catch (UnauthorizedAccessException ex)

@@ -7,7 +7,7 @@ using task_service.Domain;
 
 namespace task_service.Repository;
 
-public class TaskRepository: ITaskRepository
+public class TaskRepository : ITaskRepository
 {
     private readonly TaskDbContext _context;
 
@@ -20,7 +20,7 @@ public class TaskRepository: ITaskRepository
     {
         var dbModel = await _context.TaskTable
                                     .AsNoTracking()
-                                    .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+                                    .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted, cancellationToken);
         return dbModel?.Adapt<ETask>();
     }
 
@@ -29,18 +29,19 @@ public class TaskRepository: ITaskRepository
         var allTasks = await GetAllTaskData(cancellationToken);
         var taskData = allTasks.FirstOrDefault(t => t.Id == id);
         if (taskData == null) return null;
-        
-        var result = ConvertToDto(taskData);
+
+        var result = taskData.Adapt<TaskDto>();
         AddChildrenRecursive(result, allTasks);
         return result;
     }
-    
+
     private async Task<List<ETask>> GetAllTaskData(CancellationToken cancellationToken)
     {
         var list = await _context.TaskTable
                                  .AsNoTracking()
+                                 .Where(t => !t.IsDeleted)
                                  .ToListAsync(cancellationToken);
-        return list.Adapt<List<ETask>>(); 
+        return list.Adapt<List<ETask>>();
     }
 
     public async Task<ITaskComponent?> GetTaskTreeById(int id, CancellationToken cancellationToken)
@@ -48,7 +49,7 @@ public class TaskRepository: ITaskRepository
         var allTasks = await GetAllTaskData(cancellationToken);
         var taskData = allTasks.FirstOrDefault(t => t.Id == id);
         if (taskData == null) return null;
-        
+
         var taskMap = allTasks.ToDictionary(t => t.Id);
         var componentMap = new Dictionary<int, ITaskComponent>();
         return BuildTaskTreeRecursive(taskData, taskMap, componentMap);
@@ -62,7 +63,7 @@ public class TaskRepository: ITaskRepository
         var componentMap = new Dictionary<int, ITaskComponent>();
 
         var rootTaskModels = allTasks.Where(t => t.ParentId == null).ToList();
-        
+
         foreach (var rootTask in rootTaskModels)
         {
             var rootComponent = BuildTaskTreeRecursive(rootTask, taskMap, componentMap);
@@ -71,10 +72,10 @@ public class TaskRepository: ITaskRepository
 
         return rootTasks;
     }
+
     public async Task<List<ETask>> GetAllTasks(CancellationToken cancellationToken)
     {
-        var allTasks = await GetAllTaskData(cancellationToken);
-        return allTasks;
+        return await GetAllTaskData(cancellationToken);
     }
 
     private ITaskComponent BuildTaskTreeRecursive(ETask taskData, Dictionary<int, ETask> taskMap, Dictionary<int, ITaskComponent> componentMap)
@@ -91,7 +92,7 @@ public class TaskRepository: ITaskRepository
         if (childrenData.Any())
         {
             var composite = new TaskComposite(taskData);
-            componentMap[taskData.Id] = composite; 
+            componentMap[taskData.Id] = composite;
 
             foreach (var childData in childrenData)
             {
@@ -113,23 +114,23 @@ public class TaskRepository: ITaskRepository
     {
         var allTasks = await GetAllTaskData(cancellationToken);
         var result = new List<TaskDto>();
-    
+
         var rootTasks = allTasks.Where(t => t.ParentId == null).ToList();
-    
+
         foreach (var rootTask in rootTasks)
         {
             var taskDto = ConvertToDto(rootTask);
             AddChildrenRecursive(taskDto, allTasks);
             result.Add(taskDto);
         }
-    
+
         return result;
     }
 
     private void AddChildrenRecursive(TaskDto parentDto, List<ETask> allTasks)
     {
         var children = allTasks.Where(t => t.ParentId == parentDto.Id).ToList();
-    
+
         foreach (var child in children)
         {
             var childDto = ConvertToDto(child);
@@ -159,16 +160,17 @@ public class TaskRepository: ITaskRepository
     {
         if (task.ParentId.HasValue)
         {
-            bool parentExists = await _context.TaskTable.AnyAsync(t => t.Id == task.ParentId.Value, cancellationToken);
+            bool parentExists = await _context.TaskTable.AnyAsync(t => t.Id == task.ParentId.Value && !t.IsDeleted, cancellationToken);
             if (!parentExists)
             {
                 throw new InvalidOperationException($"Родительская задача с ID {task.ParentId.Value} не существует.");
             }
         }
-        
+
         var dbModel = task.Adapt<TaskDbModel>();
         dbModel.StartDate = task.StartDate.ToUniversalTime();
         dbModel.EndDate = task.EndDate.ToUniversalTime();
+        dbModel.IsDeleted = false; // Устанавливаем по умолчанию
         await _context.TaskTable.AddAsync(dbModel, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
         return dbModel.Adapt<ETask>();
@@ -178,20 +180,20 @@ public class TaskRepository: ITaskRepository
     {
         if (task.ParentId.HasValue)
         {
-            bool parentExists = await _context.TaskTable.AnyAsync(t => t.Id == task.ParentId.Value, cancellationToken);
+            bool parentExists = await _context.TaskTable.AnyAsync(t => t.Id == task.ParentId.Value && !t.IsDeleted, cancellationToken);
             if (!parentExists)
             {
                 throw new InvalidOperationException($"Родительская задача с ID {task.ParentId.Value} не существует.");
             }
-            
+
             if (task.ParentId.Value == task.Id)
             {
                 throw new InvalidOperationException("Задача не может быть родителем самой себя.");
             }
         }
-        
+
         var dbModel = await _context.TaskTable.FindAsync(new object[] { task.Id }, cancellationToken);
-        if (dbModel == null) return null;
+        if (dbModel == null || dbModel.IsDeleted) return null;
 
         task.Adapt(dbModel);
         _context.TaskTable.Update(dbModel);
@@ -201,31 +203,90 @@ public class TaskRepository: ITaskRepository
 
     public async Task<bool> DeleteTask(int id, CancellationToken cancellationToken)
     {
-        var allTasks = await GetAllTaskData(cancellationToken);
-        
-        var taskToDelete = allTasks.FirstOrDefault(t => t.Id == id);
-        if (taskToDelete == null)
-            return false;
-            
-        var idsToDelete = new HashSet<int>();
-        CollectTaskIdsToDelete(id, allTasks, idsToDelete);
-        
-        var tasksToDelete = await _context.TaskTable
-                                         .Where(t => idsToDelete.Contains(t.Id))
-                                         .ToListAsync(cancellationToken);
-                                         
-        if (!tasksToDelete.Any())
-            return false;
-            
-        _context.TaskTable.RemoveRange(tasksToDelete);
-        await _context.SaveChangesAsync(cancellationToken);
-        return true;
+        return await SoftDeleteAsync(id); // Перенаправляем на мягкое удаление
     }
-    
+
+    public async Task<bool> SoftDeleteAsync(int id)
+    {
+        try{
+            var allTasks = await GetAllTaskData(CancellationToken.None);
+            var taskToDelete = allTasks.FirstOrDefault(t => t.Id == id);
+            if (taskToDelete == null)
+                throw new KeyNotFoundException($"Task with ID {id} not found");
+
+            var idsToDelete = new HashSet<int>();
+            CollectTaskIdsToDelete(id, allTasks, idsToDelete);
+
+            var tasksToDelete = await _context.TaskTable
+                .Where(t => idsToDelete.Contains(t.Id))
+                .ToListAsync(CancellationToken.None);
+
+            if (!tasksToDelete.Any())
+                throw new KeyNotFoundException($"No tasks found to delete");
+
+            foreach (var task in tasksToDelete)
+            {
+                task.IsDeleted = true;
+            }
+
+            _context.TaskTable.UpdateRange(tasksToDelete);
+            await _context.SaveChangesAsync(CancellationToken.None);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new InvalidOperationException($"Failed to delete task with ID {id}", ex);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException($"Failed to delete task with ID {id}", ex);
+        }
+        return false;
+    }
+
+    public async Task RestoreAsync(int id)
+    {
+        var allTasks = await _context.TaskTable
+                                    .AsNoTracking()
+                                    .ToListAsync(CancellationToken.None);
+        var idsToRestore = new HashSet<int>();
+        CollectTaskIdsToDelete(id, allTasks.Adapt<List<ETask>>(), idsToRestore);
+
+        var tasksToRestore = await _context.TaskTable
+                                          .Where(t => idsToRestore.Contains(t.Id))
+                                          .ToListAsync(CancellationToken.None);
+
+        if (!tasksToRestore.Any())
+            throw new KeyNotFoundException($"No tasks found to restore");
+
+        foreach (var task in tasksToRestore)
+        {
+            task.IsDeleted = false;
+        }
+
+        _context.TaskTable.UpdateRange(tasksToRestore);
+        await _context.SaveChangesAsync(CancellationToken.None);
+    }
+
+    public async Task<IEnumerable<ETask>> GetTaskSubtreeAsync(int id)
+    {
+        var allTasks = await _context.TaskTable
+                                    .AsNoTracking()
+                                    .ToListAsync(CancellationToken.None);
+        var idsToInclude = new HashSet<int>();
+        CollectTaskIdsToDelete(id, allTasks.Adapt<List<ETask>>(), idsToInclude);
+
+        var subtreeTasks = allTasks
+                           .Where(t => idsToInclude.Contains(t.Id))
+                           .ToList();
+
+        return subtreeTasks.Adapt<List<ETask>>();
+    }
+
     private void CollectTaskIdsToDelete(int taskId, List<ETask> allTasks, HashSet<int> idsToDelete)
     {
         idsToDelete.Add(taskId);
-        
+
         var childTasks = allTasks.Where(t => t.ParentId == taskId).ToList();
         foreach (var child in childTasks)
         {
@@ -241,7 +302,7 @@ public class TaskRepository: ITaskRepository
         var componentMap = new Dictionary<int, ITaskComponent>();
 
         var rootTaskModels = allTasks.Where(t => t.ParentId == null).ToList();
-        
+
         foreach (var rootTask in rootTaskModels)
         {
             var rootComponent = BuildTaskTreeRecursive(rootTask, taskMap, componentMap);
@@ -250,6 +311,7 @@ public class TaskRepository: ITaskRepository
 
         return rootTasks;
     }
+
     public async Task<IEnumerable<ETask>> GetAllAsync()
     {
         return await GetAllTasks(CancellationToken.None);
@@ -278,22 +340,18 @@ public class TaskRepository: ITaskRepository
 
     public async Task DeleteAsync(int id)
     {
-        bool result = await DeleteTask(id, CancellationToken.None);
-        if (!result)
-            throw new KeyNotFoundException($"Task with ID {id} not found");
+        await SoftDeleteAsync(id);
     }
 
     public async Task<IEnumerable<ETask>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null)
     {
         var tasks = await GetAllTasks(CancellationToken.None);
-        
-        // Apply notification filter if specified
+
         if (notificationsEnabled.HasValue)
         {
             tasks = tasks.Where(t => t.Notify == notificationsEnabled.Value).ToList();
         }
-        
-        // Apply sorting based on strategy
+
         return sortBy?.ToLower() switch
         {
             "newest" => tasks.OrderByDescending(t => t.StartDate),
@@ -301,7 +359,7 @@ public class TaskRepository: ITaskRepository
             "priority" => tasks.OrderByDescending(t => t.Importance),
             "name" => tasks.OrderBy(t => t.Name),
             "deadline" => tasks.OrderBy(t => t.EndDate),
-            _ => tasks.OrderByDescending(t => t.StartDate) // Default to newest
+            _ => tasks.OrderByDescending(t => t.StartDate)
         };
     }
 
@@ -318,5 +376,4 @@ public class TaskRepository: ITaskRepository
         var now = DateTime.UtcNow;
         return tasks.Where(t => t.EndDate < now && t.Status != TaskStatusT.Completed);
     }
-    
 }

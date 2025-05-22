@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Overview } from "@/components/dashboard/overview"
 import { RecentActivity } from "@/components/dashboard/recent-activity"
+import Link from "next/link";
+import {Plus} from "lucide-react";
+import {Button} from "@/components/ui/button";
 
 export default function Home() {
     const [tasks, setTasks] = useState([])
@@ -113,15 +116,18 @@ export default function Home() {
                     </div>
                 </TabsContent>
                 <TabsContent value="tasks" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Create Task</CardTitle>
-                            <CardDescription>Add a new task or edit an existing one</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <TaskForm task={editingTask} onSave={handleSave} allTasks={tasks} />
-                        </CardContent>
-                    </Card>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className="text-3xl font-bold tracking-tight">Tasks</h2>
+                            
+                        </div>
+                        <Button asChild>
+                            <Link href="/tasks/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                New Task
+                            </Link>
+                        </Button>
+                    </div>
                     <Card>
                         <CardHeader>
                             <CardTitle>Task List</CardTitle>
@@ -131,6 +137,7 @@ export default function Home() {
                             <TaskTable tasks={tasks} onEdit={handleEdit} onDelete={fetchTasks} />
                         </CardContent>
                     </Card>
+                    
                 </TabsContent>
             </Tabs>
         </div>

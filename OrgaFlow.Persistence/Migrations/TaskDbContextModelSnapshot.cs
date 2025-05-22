@@ -98,6 +98,9 @@ namespace OrgaFlow.Persistence.Migrations
                     b.Property<bool>("IsAllDay")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsRecurring")
                         .HasColumnType("boolean");
 

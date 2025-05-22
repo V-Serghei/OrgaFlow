@@ -1,4 +1,5 @@
 using OrgaFlow.Application.Proxy.Interfaces;
+using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.Requests.ChainOfResponsibility;
 using OrgaFlow.Contracts.Responses.ChainOfResponsibility;
 

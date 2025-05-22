@@ -35,14 +35,17 @@ public class TaskService : ITaskService
     {
         var res = await _client.GetAsync($"{id}");
         if (!res.IsSuccessStatusCode) return null;
-        return await res.Content.ReadFromJsonAsync<TaskDto>();
+        var content = await res.Content.ReadFromJsonAsync<TaskDto>();
+        return content;
     }
 
-    public async Task<TaskDto> CreateTaskAsync(TaskDto task)
+    public async Task<TaskDto?> CreateTaskAsync(TaskDto task)
     {
         var res = await _client.PostAsJsonAsync("", task);
         res.EnsureSuccessStatusCode();
-        return await res.Content.ReadFromJsonAsync<TaskDto>()!;
+        var createdTask = await res.Content.ReadFromJsonAsync<TaskDto>();
+        
+        return createdTask;
     }
 
     public async Task UpdateTaskAsync(TaskDto task)
