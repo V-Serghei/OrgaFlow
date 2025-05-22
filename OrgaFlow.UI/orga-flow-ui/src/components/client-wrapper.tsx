@@ -1,4 +1,3 @@
-// client-wrapper.tsx
 "use client";
 
 import { Toaster } from "@/components/ui/toaster";

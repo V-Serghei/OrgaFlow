@@ -1,11 +1,11 @@
-using MediatR;
+using OrgaFlow.Application.Mediator;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Interfaces;
 using OrgaFlow.Persistence.Repository;
 
 namespace OrgaFlow.Application.Commands.User.UserDelete;
 
-public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand, UserDeleteResponse>
+public class DeleteUserCommandHandler : IURequestHandler<DeleteUserCommand, UserDeleteResponse>
 {
     private readonly IDbRepository _userRepository;
 
@@ -14,7 +14,7 @@ public class DeleteUserCommandHandler : IRequestHandler<DeleteUserCommand, UserD
         _userRepository = userRepository;
     }
 
-    public async Task<UserDeleteResponse> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserDeleteResponse> HandleAsync(DeleteUserCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.DeleteAsync(request.Id, cancellationToken);
         if (user)

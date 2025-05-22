@@ -1,4 +1,4 @@
-// src/types/task.ts
+
 export type Task = {
     id: string
     name: string
@@ -7,4 +7,6 @@ export type Task = {
     startDate?: string
     endDate?: string
     notify?: boolean
+    parentId?: string
+    children?: Task[]
 }

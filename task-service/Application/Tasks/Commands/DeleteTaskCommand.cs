@@ -2,7 +2,4 @@ using MediatR;
 
 namespace task_service.Application.Tasks.Commands;
 
-public class DeleteTaskCommand(int id) : IRequest<bool>
-{
-    public int Id { get; set; } = id;
-}
+public record DeleteTaskCommand(int Id) : IRequest<bool>;

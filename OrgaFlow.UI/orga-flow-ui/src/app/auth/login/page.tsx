@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import {apiAuth} from "@/lib/api-auth";
 
 export default function LoginPage() {
     const router = useRouter()
@@ -17,35 +18,73 @@ export default function LoginPage() {
     const [formData, setFormData] = useState({
         email: "",
         password: "",
+        username: "",
         rememberMe: false,
     })
 
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
-        setIsLoading(true)
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
 
+        const preparedData = {
+            email: isEmail ? formData.email.trim() : "",
+            userName: isEmail ? "" : formData.email.trim(),
+            password: formData.password,
+        };
         // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false)
-
-            // Mock successful login
-            if (formData.email && formData.password) {
+        setTimeout(async () => {
+            setIsLoading(false);
+            if (!formData.email ||!formData.password) {
                 toast({
-                    title: "Login Successful",
-                    description: "Welcome back to TaskMaster!",
-                })
-                router.push("/")
-            } else {
-                toast({
+                    id: Date.now().toString(),
                     title: "Login Failed",
                     description: "Please check your credentials and try again.",
                     variant: "destructive",
-                })
+                });
             }
-        }, 1500)
-    }
+            setIsLoading(true)
+
+            try {
+                const res = await apiAuth.post("login", preparedData);
+                toast({
+                    id: Date.now().toString(),
+                    title: "Registration Successful",
+                    description: "Your account has been created successfully.",
+                })
+
+                router.push("/")
+            } catch (error: any) {
+                toast({
+                    id: Date.now().toString(),
+                    title: "Registration failed",
+                    description: error.response?.data || "Something went wrong",
+                    variant: "destructive",
+                })
+            } finally {
+                setIsLoading(false)
+            }
+
+                // Mock successful login
+            if (formData.email && formData.password) {
+                toast({
+                    id: Date.now().toString(),
+                    title: "Login Successful",
+                    description: "Welcome back to TaskMaster!",
+                });
+                router.push("/");
+            } else {
+                toast({
+                    id: Date.now().toString(),
+                    title: "Login Failed",
+                    description: "Please check your credentials and try again.",
+                    variant: "destructive",
+                });
+            }
+        }, 1500);
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center px-4 py-12">

@@ -1,5 +1,4 @@
-﻿using MediatR;
-using OrgaFlow.Contracts.Responses;
+﻿using OrgaFlow.Contracts.Responses;
 
 namespace OrgaFlow.Application.Queries.User.GetUsers;
 

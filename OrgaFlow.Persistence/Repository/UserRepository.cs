@@ -19,7 +19,22 @@ public class UserRepository : IDbRepository
     
     public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken)
     {
-        return await _context.Users.FindAsync(id, cancellationToken);
+        var user = await _context.Users.FindAsync(id, cancellationToken);
+        
+        return user;
+    }
+
+    public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Email == email && e.PasswordHash == password, cancellationToken);
+        return user;
+    }
+
+    public async Task<User?> GetByUserNameAndPasswordAsync(string email, string password, CancellationToken cancellationToken)
+    {
+        return await _context.Users.FindAsync(email, password, cancellationToken);
     }
 
     public async Task<List<User>> GetAllAsync(CancellationToken cancellationToken)
@@ -34,7 +49,7 @@ public class UserRepository : IDbRepository
         return user;
     }
 
-    public async Task<(bool, string, string)> UpdateAsync(User user, CancellationToken cancellationToken)
+    public async Task<User?> UpdateAsync(User user, CancellationToken cancellationToken)
     {
         try
         {
@@ -43,14 +58,14 @@ public class UserRepository : IDbRepository
             {
                 dbUser = user;
                 await _context.SaveChangesAsync(cancellationToken);
-                if (dbUser.UserName != null) return new(true, "Success", dbUser.UserName);
+                if (dbUser.UserName != null) return user;
             }
 
-            return new(false, "User not found", "");
+            throw new Exception("User not found");
         }
         catch (Exception e)
         {
-            return new(false, e.Message, "");
+            throw new Exception(e.Message);
         }
     }
 
