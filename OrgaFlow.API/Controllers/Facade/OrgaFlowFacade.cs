@@ -16,7 +16,8 @@ public class OrgaFlowFacade : IOrgaFlowFacade
     private readonly IEmailService _emailService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _contextAccessor;
-    
+    private IOrgaFlowFacade _orgaFlowFacadeImplementation;
+
 
     public OrgaFlowFacade(IUserService userService, IHttpClientFactory httpClientFactory, IHttpContextAccessor contextAccessor, ITaskService taskService, IEmailService emailService)
     {
@@ -188,6 +189,11 @@ public class OrgaFlowFacade : IOrgaFlowFacade
     public Task<IEnumerable<TaskDto>> GetSortedTasksUserIdAsync(string userId, string sortBy, bool? notificationsEnabled)
     {
         throw new NotImplementedException();
+    }
+
+    public Task<CommandState> GetCommandState()
+    {
+        return _orgaFlowFacadeImplementation.GetCommandState();
     }
 
     // ---------------- EMAIL ----------------

@@ -80,6 +80,6 @@ public class UserService(IMediatorU mediator) : IUserService
 
     public Task<bool> LogoutUserAsync()
     {
-        return Task.FromResult(true);
+        return Task.FromResult(false);
     }
 }

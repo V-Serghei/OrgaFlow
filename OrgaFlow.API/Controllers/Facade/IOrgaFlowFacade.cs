@@ -25,6 +25,7 @@ public interface IOrgaFlowFacade
     Task DeleteTaskAsync(int id);
     Task<IEnumerable<TaskDto>> GetSortedTasksAsync(string sortBy, bool? notificationsEnabled = null);
     Task<IEnumerable<TaskDto>> GetSortedTasksUserIdAsync(string userId, string sortBy, bool? notificationsEnabled);
+    Task<CommandState> GetCommandState();
 
     
     // Email Facade

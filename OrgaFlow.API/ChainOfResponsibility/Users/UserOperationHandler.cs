@@ -66,6 +66,7 @@ public class UserOperationHandler: BaseRequestHandler<UserOperationRequest, User
                             Role = createdUser.UserDto?.Role,
                             Email = createdUser.UserDto?.Email
                         });
+                        await base.HandleAsync(context);
                         
                         break;
                         
@@ -88,7 +89,7 @@ public class UserOperationHandler: BaseRequestHandler<UserOperationRequest, User
                             Role = loginResult.User?.Role,
                             Email = loginResult.User?.Email
                         });
-                        
+                        await base.HandleAsync(context);
                         break;
                         
                     case "Update":
@@ -134,8 +135,10 @@ public class UserOperationHandler: BaseRequestHandler<UserOperationRequest, User
                         
                     case "Logout":
                         await _userService.LogoutUserAsync();
+                        context.HttpResponse?.Cookies.Delete("AuthToken");
                         
                         context.SetMetadata("DeleteToken", true);
+                        
                         
                         break;
                         
@@ -147,21 +150,24 @@ public class UserOperationHandler: BaseRequestHandler<UserOperationRequest, User
             }
             catch (UnauthorizedAccessException ex)
             {
+                context.IsHandled = true;
                 context.ErrorMessage = ex.Message;
                 context.ErrorCode = "UNAUTHORIZED";
             }
             catch (ArgumentException ex)
             {
+                context.IsHandled = true;
                 context.ErrorMessage = ex.Message;
                 context.ErrorCode = "INVALID_ARGUMENT";
             }
             catch (Exception ex)
             {
+                context.IsHandled = true;
                 context.ErrorMessage = $"Error executing user operation: {ex.Message}";
                 context.ErrorCode = "OPERATION_ERROR";
             }
             
-            context.IsHandled = true;
+            
             return context;
         }
     }

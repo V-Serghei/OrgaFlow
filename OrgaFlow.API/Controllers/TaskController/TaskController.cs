@@ -49,7 +49,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
         [HttpGet("user/{currentUser}")]
@@ -70,7 +71,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
 
@@ -84,7 +86,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
 
@@ -134,7 +137,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
 
@@ -186,7 +190,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
 
@@ -200,7 +205,8 @@ namespace OrgaFlow.Application.Controllers.TaskController
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
             }
         }
         
@@ -251,6 +257,23 @@ namespace OrgaFlow.Application.Controllers.TaskController
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Ошибка при повторе операции", details = ex.Message });
+            }
+        }
+        [HttpGet("commands/state")]
+        public async Task<IActionResult> GetCommandState()
+        {
+            var result = await _facade.GetCommandState();
+            if (result != null)
+            {
+                return Ok(new
+                {
+                    canUndo = result.CanUndo,
+                    canRedo = result.CanRedo
+                });
+            }
+            else
+            {
+                return NotFound(new { message = "Состояние команд не найдено" });
             }
         }
     }

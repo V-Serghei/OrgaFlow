@@ -3,10 +3,10 @@ using task_service.Repository;
 
 namespace task_service.Commands;
 
-public class CreateTaskCommand : ICommand
+public class CreateTaskCommand : ICommand, IRequiresDependencies
 {
     private readonly TaskDto _taskDto;
-    private readonly ITaskRepository _repository;
+    private ITaskRepository _repository;
     private ETask _createdTask;
 
     public CreateTaskCommand(TaskDto taskDto, ITaskRepository repository)
@@ -23,6 +23,10 @@ public class CreateTaskCommand : ICommand
             return false;
         
         return true;
+    }
+    public void ResolveDependencies(IServiceProvider serviceProvider)
+    {
+        _repository = serviceProvider.GetRequiredService<ITaskRepository>();
     }
 
     public async Task<object> Execute()

@@ -28,7 +28,7 @@ public class ChainManager
         }
         
         public async Task<RequestContext<UserOperationRequest, UserOperationResponse>> ProcessUserRequest(
-            UserOperationRequest request, string operationType)
+            UserOperationRequest request, string operationType, HttpResponse httpResponse = null)
         {
             var chain = _chainFactory.CreateUserChain();
             
@@ -36,7 +36,8 @@ public class ChainManager
             {
                 Request = request,
                 Response = new UserOperationResponse(),
-                OperationType = operationType
+                OperationType = operationType,
+                HttpResponse = httpResponse
             };
             
             return await chain.HandleAsync(context);

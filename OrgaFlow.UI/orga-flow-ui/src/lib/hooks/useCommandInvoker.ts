@@ -1,26 +1,42 @@
-import { useState, useEffect } from 'react';
-import { CommandInvoker } from '../commands/CommandInvoker';
-import { ICommand } from '../commands/CommandInterface';
-import { useToast } from '@/hooks/use-toast';
+// lib/hooks/useCommandInvoker.js
+"use client";
 
-export const globalCommandInvoker = new CommandInvoker();
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import api from '@/lib/api';
 
 export function useCommandInvoker() {
     const { toast } = useToast();
     const [canUndo, setCanUndo] = useState(false);
     const [canRedo, setCanRedo] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        setCanUndo(globalCommandInvoker.canUndo());
-        setCanRedo(globalCommandInvoker.canRedo());
+    // Функция для получения состояния команд с сервера
+    const refreshCommandState = useCallback(async () => {
+        try {
+            const response = await api.get('/commands/state');
+            setCanUndo(response.data.canUndo);
+            setCanRedo(response.data.canRedo);
+        } catch (error) {
+            console.error('Ошибка при получении состояния команд:', error);
+        }
     }, []);
 
-    const executeCommand = async (command: ICommand) => {
-        try {
-            const result = await globalCommandInvoker.executeCommand(command);
+    // Загружаем состояние при монтировании компонента
+    useEffect(() => {
+        refreshCommandState();
+    }, [refreshCommandState]);
 
-            setCanUndo(globalCommandInvoker.canUndo());
-            setCanRedo(globalCommandInvoker.canRedo());
+    // Выполнение команды через API - ИСПРАВЛЕНО
+    const executeCommand = async (command) => {
+        setLoading(true);
+        try {
+            // Вместо проверки типов команды, просто вызываем ее метод execute
+            // Это избавляет от необходимости импортировать классы команд
+            const result = await command.execute();
+
+            // Обновляем состояние команд после выполнения
+            await refreshCommandState();
 
             return result;
         } catch (error) {
@@ -30,12 +46,17 @@ export function useCommandInvoker() {
                 variant: "destructive",
             });
             throw error;
+        } finally {
+            setLoading(false);
         }
     };
 
+    // Отмена команды
     const undo = async () => {
+        setLoading(true);
         try {
-            const success = await globalCommandInvoker.undoCommand();
+            const response = await api.post('/undo');
+            const success = response.status === 200;
 
             if (success) {
                 toast({
@@ -50,9 +71,7 @@ export function useCommandInvoker() {
                 });
             }
 
-            setCanUndo(globalCommandInvoker.canUndo());
-            setCanRedo(globalCommandInvoker.canRedo());
-
+            await refreshCommandState();
             return success;
         } catch (error) {
             toast({
@@ -61,12 +80,17 @@ export function useCommandInvoker() {
                 variant: "destructive",
             });
             return false;
+        } finally {
+            setLoading(false);
         }
     };
 
+    // Повтор команды
     const redo = async () => {
+        setLoading(true);
         try {
-            const success = await globalCommandInvoker.redoCommand();
+            const response = await api.post('/redo');
+            const success = response.status === 200;
 
             if (success) {
                 toast({
@@ -81,9 +105,7 @@ export function useCommandInvoker() {
                 });
             }
 
-            setCanUndo(globalCommandInvoker.canUndo());
-            setCanRedo(globalCommandInvoker.canRedo());
-
+            await refreshCommandState();
             return success;
         } catch (error) {
             toast({
@@ -92,8 +114,18 @@ export function useCommandInvoker() {
                 variant: "destructive",
             });
             return false;
+        } finally {
+            setLoading(false);
         }
     };
 
-    return { executeCommand, undo, redo, canUndo, canRedo };
+    return {
+        executeCommand,
+        undo,
+        redo,
+        canUndo,
+        canRedo,
+        loading,
+        refreshCommandState
+    };
 }

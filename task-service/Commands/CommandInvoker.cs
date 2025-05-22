@@ -11,7 +11,8 @@ public class CommandInvoker
     private readonly string _historyFilePath = "command_history.json";
     private readonly ILogger<CommandInvoker> _logger;
     private readonly IServiceProvider _serviceProvider;
-
+    public bool CanUndo() => _historyPosition >= 0;
+    public bool CanRedo() => _historyPosition < _commandHistory.Count - 1;
     public CommandInvoker(ILogger<CommandInvoker> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
@@ -20,6 +21,14 @@ public class CommandInvoker
 
     public async Task<object> ExecuteCommand(ICommand command)
     {
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            // Если команда требует внедрения зависимостей
+            if (command is IRequiresDependencies commandWithDeps)
+            {
+                commandWithDeps.ResolveDependencies(scope.ServiceProvider);
+            }
+
             var result = await command.Execute();
 
             if (_historyPosition < _commandHistory.Count - 1)
@@ -32,7 +41,7 @@ public class CommandInvoker
 
             await SaveHistoryAsync();
             return result;
-            
+        }
     }
 
     public async Task<bool> UndoCommand()
@@ -42,17 +51,31 @@ public class CommandInvoker
             if (_historyPosition < 0)
                 return false;
 
-            await _commandHistory[_historyPosition].Undo();
-            _historyPosition--;
+            // Создаем scope перед получением сервисов
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var command = _commandHistory[_historyPosition];
+                if (command is IRequiresDependencies commandWithDeps)
+                {
+                    // Передаем ServiceProvider из scope, а не корневой
+                    commandWithDeps.ResolveDependencies(scope.ServiceProvider);
+                }
 
-            await SaveHistoryAsync();
-            return true;
+                await command.Undo();
+                _historyPosition--;
+
+                await SaveHistoryAsync();
+                return true;
+            }
         }
-        finally
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error during undo operation");
+            return false;
         }
     }
 
+// Аналогично для RedoCommand
     public async Task<bool> RedoCommand()
     {
         try
@@ -60,17 +83,28 @@ public class CommandInvoker
             if (_historyPosition >= _commandHistory.Count - 1)
                 return false;
 
-            _historyPosition++;
-            await _commandHistory[_historyPosition].Execute();
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                _historyPosition++;
+                var command = _commandHistory[_historyPosition];
+            
+                if (command is IRequiresDependencies commandWithDeps)
+                {
+                    commandWithDeps.ResolveDependencies(scope.ServiceProvider);
+                }
 
-            await SaveHistoryAsync();
-            return true;
+                await command.Execute();
+                await SaveHistoryAsync();
+                return true;
+            }
         }
-        finally
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error during redo operation");
+            _historyPosition--; 
+            return false;
         }
     }
-
     public async Task LoadHistoryAsync()
     {
         try

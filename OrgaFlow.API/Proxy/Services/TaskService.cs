@@ -1,5 +1,6 @@
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
+using OrgaFlow.Contracts.Models;
 
 namespace OrgaFlow.Application.Proxy.Services;
 
@@ -71,5 +72,12 @@ public class TaskService : ITaskService
         var res = await _client.PostAsync("redo", null);
         if (!res.IsSuccessStatusCode) return false;
         return true;
+    }
+    public async Task<CommandState?> GetCommandState()
+    {
+        var res = await _client.GetAsync("commands/state");
+        if (!res.IsSuccessStatusCode) return null;
+        var content = await res.Content.ReadFromJsonAsync<CommandState>();
+        return content;
     }
 }

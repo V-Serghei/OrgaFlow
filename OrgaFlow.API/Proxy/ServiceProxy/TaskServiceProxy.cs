@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
+using OrgaFlow.Contracts.Models;
 
 namespace OrgaFlow.Application.Proxy.ServiceProxy;
 
@@ -61,5 +62,12 @@ public class TaskServiceProxy : ITaskService
     {
         EnsureAuthenticated();
         return await _realService.RedoLastOperationAsync();
+    }
+
+    public async Task<CommandState?> GetCommandState()
+    {
+        EnsureAuthenticated();
+        return await _realService.GetCommandState();
+        
     }
 }

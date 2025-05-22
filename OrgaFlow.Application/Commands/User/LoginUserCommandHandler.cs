@@ -21,7 +21,9 @@ public class LoginUserCommandHandler: IURequestHandler <LoginUserCommand, UserLo
             var user = await _userRepository.GetByEmailAndPasswordAsync(request.UserData.Email, request.UserData.Password, cancellationToken);
             if (user != null)
             {
-                return user.Adapt<UserLoginResponse>();
+                var userResp = user.Adapt<UserLoginResponse>();
+                userResp.IsSuccess = true;
+                return userResp;
             }
         }
         else

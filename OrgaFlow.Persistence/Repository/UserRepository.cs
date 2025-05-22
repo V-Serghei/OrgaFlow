@@ -26,7 +26,10 @@ public class UserRepository : IDbRepository
 
     public async Task<User?> GetByEmailAndPasswordAsync(string email, string password, CancellationToken cancellationToken)
     {
-        return await _context.Users.FirstOrDefaultAsync(e=>e.Email == email && e.PasswordHash == password, cancellationToken);
+        var user = await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Email == email && e.PasswordHash == password, cancellationToken);
+        return user;
     }
 
     public async Task<User?> GetByUserNameAndPasswordAsync(string email, string password, CancellationToken cancellationToken)

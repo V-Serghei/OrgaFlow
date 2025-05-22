@@ -3,10 +3,10 @@ using task_service.Repository;
 
 namespace task_service.Commands;
 
-public class DeleteTaskCommand : ICommand
+public class DeleteTaskCommand : ICommand, IRequiresDependencies
 {
     private readonly int _taskId;
-    private readonly ITaskRepository _repository;
+    private ITaskRepository _repository;
     private IEnumerable<ETask> _deletedTasks; // Храним поддерево задач
 
     public DeleteTaskCommand(int taskId, ITaskRepository repository)
@@ -21,7 +21,10 @@ public class DeleteTaskCommand : ICommand
         var task = await _repository.GetByIdAsync(_taskId);
         return task != null && !task.IsDeleted;
     }
-
+    public void ResolveDependencies(IServiceProvider serviceProvider)
+    {
+        _repository = serviceProvider.GetRequiredService<ITaskRepository>();
+    }
     public async Task<object> Execute()
     {
         if (!await CanExecute())

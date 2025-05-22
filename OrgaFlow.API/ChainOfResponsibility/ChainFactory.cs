@@ -37,15 +37,14 @@ public class ChainFactory
         
         public IRequestHandler<UserOperationRequest, UserOperationResponse> CreateUserChain()
         {
-            
             var loggingHandler = _serviceProvider.GetRequiredService<LoggingHandler<UserOperationRequest, UserOperationResponse>>();
             var userHandler = _serviceProvider.GetRequiredService<UserOperationHandler>();
             var tokenHandler = _serviceProvider.GetRequiredService<UserTokenHandler>();
-            
+    
             loggingHandler
                 .SetNext(userHandler)
                 .SetNext(tokenHandler);
-                
+            
             return loggingHandler;
         }
         

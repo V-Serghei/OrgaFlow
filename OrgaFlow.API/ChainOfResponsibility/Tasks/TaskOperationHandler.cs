@@ -1,5 +1,6 @@
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
+using OrgaFlow.Contracts.Models;
 using OrgaFlow.Contracts.Requests.ChainOfResponsibility;
 using OrgaFlow.Contracts.Responses.ChainOfResponsibility;
 
@@ -90,6 +91,10 @@ public class TaskOperationHandler: BaseRequestHandler<TaskOperationRequest, Task
                     case "Redo":
                         var redoSuccess = await _taskService.RedoLastOperationAsync();
                         context.Response = new TaskOperationResponse { Success = redoSuccess };
+                        break;
+                    case "GetCommandState":
+                        var commandState = await _taskService.GetCommandState();
+                        context.Response = new TaskOperationResponse { CommandState = commandState };
                         break;
                     default:
                         context.ErrorMessage = $"Unknown operation: {context.Request.Operation}";

@@ -1,4 +1,5 @@
 using OrgaFlow.Contracts.DTO;
+using OrgaFlow.Contracts.Models;
 
 namespace OrgaFlow.Application.Proxy.Interfaces;
 
@@ -12,4 +13,5 @@ public interface ITaskService
     Task DeleteTaskAsync(int id);
     Task<bool> UndoLastOperationAsync();
     Task<bool> RedoLastOperationAsync();
+    Task<CommandState?> GetCommandState();
 }

@@ -1,7 +1,7 @@
 using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.Requests.ChainOfResponsibility;
 using OrgaFlow.Contracts.Responses.ChainOfResponsibility;
-
+using System.Net.Http.Json;
 namespace OrgaFlow.Application.ChainOfResponsibility.Users;
 
 public class UserTokenHandler: BaseRequestHandler<UserOperationRequest, UserOperationResponse>
@@ -52,7 +52,8 @@ public class UserTokenHandler: BaseRequestHandler<UserOperationRequest, UserOper
             var tokenResponse = await HttpClientJsonExtensions.PostAsJsonAsync(client, "create-token", tokenData);
             tokenResponse.EnsureSuccessStatusCode();
             
-            var token = await tokenResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+            var contentString = await tokenResponse.Content.ReadAsStringAsync();
+            var token = System.Text.Json.JsonSerializer.Deserialize<AuthResponseDto>(contentString);
             SetAuthCookie(context.HttpResponse, token.Token);
             context.Response.Token = token.Token;
         }
@@ -74,6 +75,7 @@ public class UserTokenHandler: BaseRequestHandler<UserOperationRequest, UserOper
         private void DeleteToken(RequestContext<UserOperationRequest, UserOperationResponse> context)
         {
             context.HttpResponse?.Cookies.Delete("AuthToken");
+            context.SetMetadata("TokenDeleted", true);
         }
         
         private static void SetAuthCookie(HttpResponse response, string token)
@@ -83,8 +85,8 @@ public class UserTokenHandler: BaseRequestHandler<UserOperationRequest, UserOper
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
                 Expires = DateTime.UtcNow.AddDays(30)
             };
             

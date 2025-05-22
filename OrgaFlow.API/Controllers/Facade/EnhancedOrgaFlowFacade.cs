@@ -106,6 +106,20 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             throw new UnauthorizedAccessException(result.ErrorMessage);
         }
     }
+
+    public async Task<CommandState> GetCommandState()
+    {
+        var request = new TaskOperationRequest
+        {
+            Operation = "GetCommandState"
+        };
+        var result = await _chainManager.ProcessTaskRequest(request, "GetCommandState");
+        if (!result.IsSuccessful)
+        {
+            throw new UnauthorizedAccessException(result.ErrorMessage);
+        }
+        return result.Response.CommandState ?? throw new InvalidOperationException("Command state retrieval failed");
+    }
     
     // ---------------- USER ----------------
     public async Task<GetUserByIdResponse> GetUserByIdAsync(string id)
@@ -153,7 +167,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             RegisterData = user
         };
         
-        var result = await _chainManager.ProcessUserRequest(request, "CreateUser");
+        var result = await _chainManager.ProcessUserRequest(request, "CreateUser",response);
         
         if (!result.IsSuccessful)
         {
@@ -171,7 +185,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             LoginData = user
         };
         
-        var result = await _chainManager.ProcessUserRequest(request, "Login");
+        var result = await _chainManager.ProcessUserRequest(request, "Login",response);
         
         if (!result.IsSuccessful)
         {
@@ -188,7 +202,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             Operation = "Logout"
         };
         
-        var result = await _chainManager.ProcessUserRequest(req, "Logout");
+        var result = await _chainManager.ProcessUserRequest(req, "Logout", response);
         
         if (!result.IsSuccessful)
         {
@@ -207,7 +221,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             UserId = userId
         };
         
-        var result = await _chainManager.ProcessUserRequest(req, "DeleteUser");
+        var result = await _chainManager.ProcessUserRequest(req, "DeleteUser",response);
         
         if (!result.IsSuccessful)
         {
@@ -223,7 +237,7 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
             UserView = user
         };
         
-        var result = await _chainManager.ProcessUserRequest(req, "UpdateUser");
+        var result = await _chainManager.ProcessUserRequest(req, "UpdateUser",response);
         
         if (!result.IsSuccessful)
         {

@@ -55,7 +55,7 @@ export default function TasksPage() {
     };
 
     const handleEditTask = (task: any) => {
-        router.push(`/${task.id}/edit`);
+        router.push(`task/${task.id}/edit`);
     };
 
     const handleDeleteTask = () => {

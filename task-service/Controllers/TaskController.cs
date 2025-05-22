@@ -237,5 +237,13 @@ namespace task_service.Controllers
                 return StatusCode(500, "An error occurred while redoing the operation");
             }
         }
+        [HttpGet("commands/state")]
+        public IActionResult GetCommandState()
+        {
+            return Ok(new {
+                canUndo = _commandInvoker.CanUndo(),
+                canRedo = _commandInvoker.CanRedo()
+            });
+        }
     }
 }

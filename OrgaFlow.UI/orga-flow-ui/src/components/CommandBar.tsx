@@ -1,28 +1,34 @@
+// components/CommandBar.js
+"use client";
+
 import React, { useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Undo2, Redo2 } from 'lucide-react';
 import { useCommandInvoker } from '@/lib/hooks/useCommandInvoker';
-import { useParams } from 'next/navigation';
 
 export const TaskRefreshContext = React.createContext(() => {});
 
 export function CommandBar() {
-    const { undo, redo, canUndo, canRedo } = useCommandInvoker();
+    const { undo, redo, canUndo, canRedo, loading } = useCommandInvoker();
     const refreshTask = useContext(TaskRefreshContext);
 
     const handleUndo = async () => {
-        if (canUndo) {
-            await undo();
-            // Вызываем функцию обновления
-            refreshTask();
+        if (canUndo && !loading) {
+            const success = await undo();
+            if (success) {
+                // После успешной отмены обновляем данные
+                refreshTask();
+            }
         }
     };
 
     const handleRedo = async () => {
-        if (canRedo) {
-            await redo();
-            // Вызываем функцию обновления
-            refreshTask();
+        if (canRedo && !loading) {
+            const success = await redo();
+            if (success) {
+                // После успешного повтора обновляем данные
+                refreshTask();
+            }
         }
     };
 
@@ -32,21 +38,21 @@ export function CommandBar() {
                 variant="outline"
                 size="sm"
                 onClick={handleUndo}
-                disabled={!canUndo}
+                disabled={!canUndo || loading}
                 className="flex items-center"
             >
                 <Undo2 className="h-4 w-4 mr-1" />
-                Отменить
+                {loading ? "Выполняется..." : "Отменить"}
             </Button>
             <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRedo}
-                disabled={!canRedo}
+                disabled={!canRedo || loading}
                 className="flex items-center"
             >
                 <Redo2 className="h-4 w-4 mr-1" />
-                Повторить
+                {loading ? "Выполняется..." : "Повторить"}
             </Button>
         </div>
     );

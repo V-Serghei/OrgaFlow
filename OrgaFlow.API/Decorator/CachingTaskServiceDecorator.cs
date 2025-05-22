@@ -1,6 +1,7 @@
 using OrgaFlow.Application.Proxy.Interfaces;
 using OrgaFlow.Contracts.DTO;
 using Microsoft.Extensions.Caching.Memory;
+using OrgaFlow.Contracts.Models;
 
 namespace OrgaFlow.Application.Decorator;
 
@@ -110,7 +111,12 @@ public class CachingTaskServiceDecorator : ITaskService
         
         return result;
     }
-    
+
+    public Task<CommandState?> GetCommandState()
+    {
+        return _inner.GetCommandState();
+    }
+
     private void RemoveSortedTasksCache()
     {
         var cacheKeys = new[]
@@ -120,14 +126,15 @@ public class CachingTaskServiceDecorator : ITaskService
             "sorted_tasks_name-asc_",
             "sorted_tasks_name-desc_",
             "sorted_tasks_due-soon_",
-            "sorted_tasks_importance_"
+            "sorted_tasks_importance_",
+            "sorted_tasks_createdAt_"
         };
         
         foreach (var key in cacheKeys)
         {
             _cache.Remove(key + "True");
             _cache.Remove(key + "False");
-            _cache.Remove(key + "");
+            _cache.Remove(key);
         }
     }
     

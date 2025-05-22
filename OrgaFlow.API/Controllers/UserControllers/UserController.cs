@@ -31,7 +31,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-           return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -44,7 +44,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -57,7 +57,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -70,7 +70,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -83,7 +83,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);  
         }
 
         return Ok("Logged out successfully.");
@@ -102,7 +102,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 
@@ -119,7 +119,7 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
         }
     }
 }

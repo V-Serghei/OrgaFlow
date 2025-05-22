@@ -29,7 +29,8 @@ export default function EditTask() {
     const router = useRouter();
     const { toast } = useToast();
     const { id } = params;
-    const { executeCommand, canUndo, canRedo, undo, redo } = useCommandInvoker();
+    const { executeCommand, refreshCommandState } = useCommandInvoker();
+
     const commandFactory = new TaskCommandFactory();
     const [loading, setLoading] = useState(true);
     const currentDate = new Date();
@@ -138,17 +139,27 @@ export default function EditTask() {
             fetchTask();
         }
     }, [id]);
+   
     const refreshTaskData = useCallback(async () => {
         setLoading(true);
         try {
             const response = await api.get(`${id}`);
-            setTask(response.data);
+            const fetchedTask = response.data;
+            setTask({
+                ...fetchedTask,
+                priority: importanceReverseMap[fetchedTask.importance] || 'medium',
+                startDate: fetchedTask.startDate ? new Date(fetchedTask.startDate) : null,
+                endDate: fetchedTask.endDate ? new Date(fetchedTask.endDate) : null,
+            });
+
+            // Добавляем обновление состояния команд
+            refreshCommandState();
         } catch (error) {
             console.error("Error refreshing task:", error);
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, refreshCommandState]);
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
@@ -194,6 +205,7 @@ export default function EditTask() {
 
             const updateCommand = commandFactory.createUpdateCommand(Number(id), taskData);
             await executeCommand(updateCommand);
+            refreshCommandState();
 
             toast({
                 title: "Задача обновлена",
@@ -220,7 +232,7 @@ export default function EditTask() {
             setIsSaving(false);
         }
     };
-
+    
     const handleAddTag = () => {
         if (newTag.trim() && !task.tags.some(tag => tag.name === newTag.trim())) {
             const colors = [

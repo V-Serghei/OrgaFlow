@@ -97,8 +97,8 @@ public class AuthController : ControllerBase
 
         return Ok(new AuthResponseDto
         {
-            Success = true,
             Token = token,
+            Success = true,
             Message = "Token created successfully"
         });
     }

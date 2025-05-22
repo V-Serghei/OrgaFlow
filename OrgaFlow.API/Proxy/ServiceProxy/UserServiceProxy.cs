@@ -83,7 +83,7 @@ public class UserServiceProxy : IUserService
             throw new UnauthorizedAccessException("User is not authenticated.");
 
         var currentUserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!user.IsInRole("User") && currentUserId != null )
+        if (!user.IsInRole("Admin") && !user.IsInRole("User") && currentUserId != null)
             throw new UnauthorizedAccessException("Access denied.");
         
         return _realService.LogoutUserAsync();
