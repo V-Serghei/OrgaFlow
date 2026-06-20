@@ -64,6 +64,12 @@ docker-compose.override.yml
 docker-compose.generated.override.yml
 
 ## ========================
+## Local dev scripts output
+## ========================
+.secrets.local
+.runtime/
+
+## ========================
 ## OS
 ## ========================
 .DS_Store

@@ -41,7 +41,7 @@ interface Task {
 
 export default function NewTask() {
     const router = useRouter();
-    const { toast } = useToast();
+    const { toast, isActive } = useToast();
     const currentDate = new Date("2023-10-01T09:00:00Z");
     const currentUser = "V-Serghei";
 
@@ -49,7 +49,7 @@ export default function NewTask() {
     const commandFactory = new TaskCommandFactory();
 
     const { parentTasks, loading: loadingParentTasks, error: parentTasksError } = useParentTasks();
-    if (parentTasksError && !toast.isActive("parent-tasks-error")) {
+    if (parentTasksError && !isActive("parent-tasks-error")) {
         toast({
             id: "parent-tasks-error",
             title: "Ошибка загрузки",
@@ -57,9 +57,6 @@ export default function NewTask() {
             variant: "destructive",
         });
     }
-
-    console.log("Parent tasks in NewTask:", parentTasks); // Отладка
-    console.log("Number of parent tasks:", parentTasks.length); // Отладка
 
     const [task, setTask] = useState({
         name: "",
@@ -101,7 +98,7 @@ export default function NewTask() {
 
     const [newTag, setNewTag] = useState("");
     const [isSaving, setIsSaving] = useState(false);
-    const [showAdvancedOptions, setShowAdvancedOptions] = useState(true); // Для тестирования
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState(true);
 
     const importanceMap: Record<string, number> = {
         low: 0,
@@ -223,9 +220,8 @@ export default function NewTask() {
         }
     };
 
-    // Рекурсивная функция для рендеринга задач с учетом вложенности
     const renderTaskOptions = (tasks: Task[], level: number = 0): JSX.Element[] => {
-        const indent = "  ".repeat(level); // Отступ для вложенных задач
+        const indent = "  ".repeat(level);
         return tasks.map((parentTask) => [
             <SelectItem key={parentTask.id} value={parentTask.id.toString()}>
                 <div className="flex items-center">

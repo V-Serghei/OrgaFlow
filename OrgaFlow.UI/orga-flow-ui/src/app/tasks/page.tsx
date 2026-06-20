@@ -36,7 +36,7 @@ export default function TasksPage() {
                         sortOrder,
                     },
                 });
-                setTasks(response.data);
+                setTasks(Array.isArray(response.data) ? response.data : []);
             } catch (error) {
                 console.error("Ошибка загрузки задач:", error);
                 toast({
@@ -49,7 +49,8 @@ export default function TasksPage() {
             }
         };
         fetchTasks();
-    }, [statusFilter, sortBy, sortOrder, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter, sortBy, sortOrder]);
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
@@ -131,12 +132,10 @@ export default function TasksPage() {
                                         <SelectValue placeholder="Сортировать по" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="newest">Дата создания (новые)</SelectItem>
-                                        <SelectItem value="oldest">Дата создания (старые)</SelectItem>
-                                        <SelectItem value="name-asc">Название (А-Я)</SelectItem>
-                                        <SelectItem value="name-desc">Название (Я-А)</SelectItem>
+                                        <SelectItem value="createdAt">Дата создания</SelectItem>
+                                        <SelectItem value="name">Название</SelectItem>
                                         <SelectItem value="importance">Приоритет</SelectItem>
-                                        <SelectItem value="due-soon">Дата окончания</SelectItem>
+                                        <SelectItem value="dueDate">Дата окончания</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <Select value={sortOrder} onValueChange={setSortOrder}>

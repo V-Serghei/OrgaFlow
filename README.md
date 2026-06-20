@@ -2,34 +2,54 @@
 
 # OrgaFlow
 
-## Предварительные требования
+## Prerequisites
 
-| Инструмент | Версия |
+| Tool | Version |
 |---|---|
-| [.NET SDK](https://dotnet.microsoft.com/download) | 8.0+ |
+| [.NET SDK](https://dotnet.microsoft.com/download) | 10.0+ |
 | [Node.js](https://nodejs.org/) | 18.0+ |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | последняя |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | latest |
 | [EF Core CLI](https://learn.microsoft.com/en-us/ef/core/cli/dotnet) | `dotnet tool install -g dotnet-ef` |
 
 ---
 
-## Быстрый старт после клонирования
+## Quick start — automated script
 
-Файлы `appsettings.Development.json` не хранятся в репозитории — их нужно создать вручную в каждом сервисе.
+Клонируй репо и запусти один скрипт. Он сам:
+- проверит все зависимости
+- сгенерирует пароли и JWT-секреты
+- создаст все конфиги
+- поднимет PostgreSQL в Docker
+- применит миграции
+- запустит все сервисы и фронтенд
 
-### 1. Создать файлы конфигурации
+```bash
+# Git Bash / WSL
+bash setup-local.sh
+```
 
-Создай следующие файлы с указанным содержимым:
+Остановить всё:
+```bash
+bash stop-local.sh
+```
+
+Логи сервисов → `.runtime/*.log`
+
+> Скрипт сохраняет сгенерированные секреты в `.secrets.local` (в .gitignore).
+> При повторном запуске использует те же секреты — база не пересоздаётся.
+
+---
+
+## Manual setup (step by step)
+
+### 1. Create config files
+
+Файлы `appsettings.Development.json` не хранятся в репозитории — создай вручную:
 
 **`OrgaFlow.API/appsettings.Development.json`**
 ```json
 {
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
+  "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } },
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DbConnectionString": "Host=localhost;Port=5433;Username=postgres;Password=secret;Database=OrgaFlowDb"
@@ -40,15 +60,15 @@
 **`auth-service/appsettings.Development.json`**
 ```json
 {
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
+  "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } },
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DbConnectionString": "Host=localhost;Port=5433;Username=postgres;Password=secret;Database=OrgaFlowDb"
+  },
+  "Jwt": {
+    "Secret": "your-secret-at-least-32-characters-long",
+    "Issuer": "OrgaFlow",
+    "Audience": "OrgaFlowClient"
   }
 }
 ```
@@ -56,12 +76,7 @@
 **`task-service/appsettings.Development.json`**
 ```json
 {
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
+  "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } },
   "AllowedHosts": "*",
   "ConnectionStrings": {
     "DbConnectionString": "Host=localhost;Port=5433;Username=postgres;Password=secret;Database=OrgaFlowDb"
@@ -69,64 +84,8 @@
 }
 ```
 
-> **Важно:** Для продакшена замени `Password=secret` и JWT-секрет в `auth-service/appsettings.json` на реальные значения. Никогда не коммить реальные пароли.
+### 2. Start PostgreSQL
 
----
-
-## Запуск через Docker (рекомендуется)
-
-### 1. Создание сети и volume
-
-```bash
-docker network create orgaflow-net
-docker volume create postgres_data
-```
-
-### 2. Запуск всех сервисов
-
-```bash
-docker-compose up -d
-```
-
-Или пошагово:
-
-```bash
-# База данных
-docker run -d \
-  --name orgaflow_postgres \
-  --network orgaflow-net \
-  -p 5433:5432 \
-  -v postgres_data:/var/lib/postgresql/data \
-  -e POSTGRES_DB=OrgaFlowDb \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=secret \
-  --restart always \
-  postgres:15
-
-# Auth-сервис
-docker build -t auth-service:dev -f auth-service/Dockerfile .
-docker run -d --name auth-service --network orgaflow-net -p 5095:8080 auth-service:dev
-
-# Task-сервис
-docker build -t task-service:dev -f ./task-service/Dockerfile .
-docker run -d --name task-service --network orgaflow-net -p 5096:8080 task-service:dev
-
-# Основное приложение
-docker build -t main-app:dev -f ./Dockerfile .
-docker run -d --name main-app --network orgaflow-net -p 80:8080 main-app:dev
-
-# UI
-docker build -t orgaflow-ui:dev -f ./OrgaFlow.UI/Dockerfile .
-docker run -d --name ui-app --network orgaflow-net -p 3000:3000 orgaflow-ui:dev
-```
-
----
-
-## Запуск через IDE (без Docker)
-
-Если нужно запустить сервисы напрямую без контейнеров, сервисные URL в `appsettings.json` уже настроены на `localhost`. Убедись что файлы `appsettings.Development.json` созданы (см. [Быстрый старт](#быстрый-старт-после-клонирования)).
-
-PostgreSQL всё равно нужен — запусти только его через Docker:
 ```bash
 docker run -d \
   --name orgaflow_postgres \
@@ -134,47 +93,67 @@ docker run -d \
   -e POSTGRES_DB=OrgaFlowDb \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=secret \
-  --restart always \
+  -v orgaflow_postgres_data:/var/lib/postgresql/data \
+  --restart unless-stopped \
   postgres:15
 ```
 
-### Установка зависимостей frontend
+### 3. Restore and build
+
+```bash
+dotnet restore
+dotnet build
+```
+
+### 4. Run migrations
+
+```bash
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AuthDbContext --no-build
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AppDbContext --no-build
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context TaskDbContext --no-build
+```
+
+### 5. Start backend services
+
+```bash
+dotnet run --project auth-service   --no-build --environment Development &
+dotnet run --project task-service   --no-build --environment Development &
+dotnet run --project email-services --no-build --environment Development &
+dotnet run --project OrgaFlow.API   --no-build --environment Development &
+```
+
+### 6. Start frontend
 
 ```bash
 cd OrgaFlow.UI/orga-flow-ui
-npm install
+npm install   # first time only
 npm run dev
 ```
 
 ---
 
-## Миграции базы данных
+## Service URLs
 
-Выполняется один раз при первом запуске (рекомендуется через IDE для контроля процесса).
-
-```bash
-# AuthDbContext
-dotnet ef migrations add Init -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AuthDbContext
-dotnet ef database update --verbose -s .\OrgaFlow.API\ -p .\OrgaFlow.Persistence\ --context AuthDbContext
-
-# AppDbContext
-dotnet ef migrations add Init -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AppDbContext
-dotnet ef database update --verbose -s .\OrgaFlow.API\ -p .\OrgaFlow.Persistence\ --context AppDbContext
-
-# TaskDbContext
-dotnet ef migrations add Init -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context TaskDbContext
-dotnet ef database update --verbose -s .\OrgaFlow.API\ -p .\OrgaFlow.Persistence\ --context TaskDbContext
-```
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Main API (Swagger) | http://localhost:5023/swagger |
+| Auth Service | http://localhost:5095/swagger |
+| Task Service | http://localhost:5130/swagger |
+| Email Service | http://localhost:5165/swagger |
+| PostgreSQL | localhost:5433 |
 
 ---
 
-## Порты сервисов
+## Docker (full containerized)
 
-| Сервис | Порт |
-|---|---|
-| UI (Next.js) | 3000 |
-| Main API | 80 |
-| Auth Service | 5095 |
-| Task Service | 5096 / 5130 |
-| Email Service | 5165 |
-| PostgreSQL | 5433 |
+```bash
+docker-compose up -d
+```
+
+First run — apply migrations after containers are up:
+```bash
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AuthDbContext
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context AppDbContext
+dotnet ef database update -s ./OrgaFlow.API -p ./OrgaFlow.Persistence --context TaskDbContext
+```
