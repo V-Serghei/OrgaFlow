@@ -7,7 +7,7 @@ public class AuthResponseDto
     [JsonPropertyName("success")]
     public bool Success { get; set; }
     [JsonPropertyName("token")]
-    public string Token { get; set; }
+    public string Token { get; set; } = null!;
     [JsonPropertyName("message")]
-    public string Message { get; set; }
+    public string Message { get; set; } = null!;
 }

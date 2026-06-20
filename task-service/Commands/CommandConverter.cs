@@ -36,7 +36,7 @@ namespace task_service.Commands
                 if (jsonObject.TryGetProperty("taskDto", out var createTaskDto))
                 {
                     var taskDto = JsonSerializer.Deserialize<TaskDto>(createTaskDto.GetRawText(), options);
-                    var command = new CreateTaskCommand(taskDto, repository);
+                    var command = new CreateTaskCommand(taskDto!, repository);
                     
                     if (jsonObject.TryGetProperty("createdTask", out var createdTaskElem))
                     {
@@ -57,7 +57,7 @@ namespace task_service.Commands
                 if (jsonObject.TryGetProperty("taskDto", out var updateTaskDto))
                 {
                     var taskDto = JsonSerializer.Deserialize<TaskDto>(updateTaskDto.GetRawText(), options);
-                    var command = new UpdateTaskCommand(taskDto, repository);
+                    var command = new UpdateTaskCommand(taskDto!, repository);
                     
                     if (jsonObject.TryGetProperty("originalTask", out var originalTaskElem))
                     {
@@ -156,7 +156,7 @@ namespace task_service.Commands
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         if (taskIdField != null)
         {
-            var taskId = (int)taskIdField.GetValue(deleteCmd);
+            var taskId = (int)(taskIdField.GetValue(deleteCmd) ?? 0);
             writer.WriteNumber("taskId", taskId);
         }
         

@@ -46,9 +46,9 @@ public class TokenRefreshHandler<TRequest, TResponse> : BaseRequestHandler<TRequ
                         Expires = DateTime.UtcNow.AddDays(30)
                     };
                     
-                    context.HttpResponse?.Cookies.Append("AuthToken", refreshResult.Token, cookieOptions);
-                    
-                    context.TokenValue = refreshResult.Token;
+                    context.HttpResponse?.Cookies.Append("AuthToken", refreshResult!.Token, cookieOptions);
+
+                    context.TokenValue = refreshResult!.Token;
                     context.SetMetadata("TokenRefreshed", true);
                     
                     _logger.LogInformation("Token refreshed for user {UserId}", context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value);

@@ -17,14 +17,14 @@ public class GmailEmailAdapter : IEmailSender
     public async Task SendEmailAsync(EmailRequest request)
     {
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("OrgaFlow Gmail", _configuration["GmailSettings:From"]));
+        message.From.Add(new MailboxAddress("OrgaFlow Gmail", _configuration["GmailSettings:From"]!));
         message.To.Add(MailboxAddress.Parse(request.To));
         message.Subject = request.Subject;
         message.Body = new TextPart("plain") { Text = request.Body };
 
         using var client = new SmtpClient();
         await client.ConnectAsync("smtp.gmail.com", 587, MailKit.Security.SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(_configuration["GmailSettings:Username"], _configuration["GmailSettings:Password"]);
+        await client.AuthenticateAsync(_configuration["GmailSettings:Username"]!, _configuration["GmailSettings:Password"]!);
 
         await client.SendAsync(message);
         await client.DisconnectAsync(true);

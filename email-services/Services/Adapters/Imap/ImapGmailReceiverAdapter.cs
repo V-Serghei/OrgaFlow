@@ -64,7 +64,7 @@ public class ImapGmailReceiverAdapter : IEmailReceiver
                 messages.Add(new EmailMessage
                 {
                     Uid = summary.UniqueId.ToString(), 
-                    Subject = summary.Envelope.Subject ?? "(без темы)",
+                    Subject = summary.Envelope!.Subject ?? "(без темы)",
                     From = summary.Envelope.From.ToString(),
                     Date = summary.InternalDate?.DateTime ?? summary.Date.DateTime, 
                     Read = summary.Flags?.HasFlag(MessageFlags.Seen) ?? false, 
@@ -110,7 +110,7 @@ public class ImapGmailReceiverAdapter : IEmailReceiver
 
             await client.Inbox.OpenAsync(FolderAccess.ReadWrite);
 
-            IMailFolder trashFolder = client.GetFolder(SpecialFolder.Trash);
+            IMailFolder? trashFolder = client.GetFolder(SpecialFolder.Trash);
             if (trashFolder == null)
             {
                  trashFolder = await client.GetFolderAsync("[Gmail]/Trash"); 
@@ -148,13 +148,13 @@ public class ImapGmailReceiverAdapter : IEmailReceiver
             if (!UniqueId.TryParse(uid, out var uniqueId))
             {
                 Console.WriteLine($"Invalid UID format: {uid}");
-                return null; 
+                return null!;
             }
 
             var message = await client.Inbox.GetMessageAsync(uniqueId);
             if (message == null)
             {
-                return null; 
+                return null!;
             }
 
             var summary = await client.Inbox.FetchAsync(new[] { uniqueId }, MessageSummaryItems.Flags | MessageSummaryItems.InternalDate);
@@ -177,10 +177,10 @@ public class ImapGmailReceiverAdapter : IEmailReceiver
                 BodyPreview = message.TextBody?.Substring(0, Math.Min(150, message.TextBody.Length)) + (message.TextBody?.Length > 150 ? "..." : "") ?? ""
             };
         }
-        catch (MessageNotFoundException) 
+        catch (MessageNotFoundException)
         {
              Console.WriteLine($"Message with UID {uid} not found for {auth.Username}.");
-             return null;
+             return null!;
         }
         catch (Exception ex)
         {

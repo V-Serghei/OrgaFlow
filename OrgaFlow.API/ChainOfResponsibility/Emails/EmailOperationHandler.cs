@@ -53,7 +53,7 @@ public class EmailOperationHandler: BaseRequestHandler<EmailOperationRequest, Em
                         }
                         
                         var messageDetail = await _emailService.GetEmailDetailsAsync(context.Request.MessageUid, context.Request.Auth);
-                        context.Response = new EmailOperationResponse { MessageDetail = messageDetail };
+                        context.Response = new EmailOperationResponse { MessageDetail = messageDetail! };
                         break;
                         
                     case "Send":

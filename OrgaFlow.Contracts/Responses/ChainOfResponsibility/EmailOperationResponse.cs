@@ -4,6 +4,6 @@ namespace OrgaFlow.Contracts.Responses.ChainOfResponsibility;
 
 public class EmailOperationResponse
 {
-    public List<EmailMessageVm> Messages { get; set; }
-    public EmailMessageDetailVm MessageDetail { get; set; }
+    public List<EmailMessageVm> Messages { get; set; } = null!;
+    public EmailMessageDetailVm MessageDetail { get; set; } = null!;
 }

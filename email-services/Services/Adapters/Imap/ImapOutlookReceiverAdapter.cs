@@ -41,7 +41,7 @@ public class ImapOutlookReceiverAdapter : IEmailReceiver
         await client.AuthenticateAsync(auth.Username, auth.Password);
         await client.Inbox.OpenAsync(FolderAccess.ReadWrite);
 
-        var trash = await client.GetFolderAsync("Deleted") ?? client.GetFolder(SpecialFolder.Trash);
+        var trash = (await client.GetFolderAsync("Deleted") ?? client.GetFolder(SpecialFolder.Trash))!;
         var uniqueIds = uids.Select(UniqueId.Parse).ToList();
 
         if (uniqueIds.Any())
