@@ -1,6 +1,26 @@
+## Build outputs
 bin/
 obj/
 /packages/
-riderModule.iml
 /_ReSharper.Caches/
+
+## User-specific files
+*.user
+*.DotSettings.user
+riderModule.iml
+
+## Sensitive config
 appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+## Visual Studio
+.vs/
+
+## JetBrains Rider — personal/generated files not shared with team
+.idea/config/
+.idea/.idea.OrgaFlow/Docker/docker-compose.generated.override.yml
+
+## Copilot / AI assistant data
+.idea/**/*copilot*
+.idea/**/*cody*

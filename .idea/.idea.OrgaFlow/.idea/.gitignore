@@ -11,3 +11,7 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+/dataSources.xml
+# AI assistant personal data
+/cody_history.xml
+copilot.data.migration.ask2agent.xml
