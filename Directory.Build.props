@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    Suppress NuGet audit advisories that either have no available fix
+    or do not affect this project's usage pattern.
+    Reviewed: 2026-06-20
+  -->
+  <ItemGroup>
+    <!-- AutoMapper 13.0.0: expression compilation — no upstream fix, not exploitable via public API -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+    <!-- MimeKit: DKIM/ARC header forgery — email-services only, no public-facing DKIM verification -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-g7hc-96xr-gvvx" />
+    <!-- MailKit: related to above MimeKit advisory -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-9j88-vvj5-vhgr" />
+    <!-- System.Security.Cryptography.Xml 9.0.0: transitive dep, not used directly -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-37gx-xxp4-5rgx" />
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-w3x6-4m5h-cxqf" />
+  </ItemGroup>
+</Project>

@@ -18,7 +18,7 @@ export default function Home() {
     const fetchTasks = async () => {
         try {
             const response = await api.get("/");
-            setTasks(response.data);
+            setTasks(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error("Ошибка загрузки задач:", error);
         }
@@ -32,7 +32,8 @@ export default function Home() {
         console.log("Редактирование задачи:", task);
     };
 
-    const countTasksByStatus = (tasks: Task[], status: number): number => {
+    const countTasksByStatus = (tasks: Task[] | undefined | null, status: number): number => {
+        if (!tasks || !Array.isArray(tasks)) return 0;
         let count = tasks.filter((task) => task.status === status).length;
         for (const task of tasks) {
             if (task.children && task.children.length) {

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -16,23 +17,30 @@ import {
 import { Bell, Menu } from "lucide-react"
 import { apiAuth } from "@/lib/api-auth"
 
+interface AuthUser {
+    userId: string
+    name: string
+}
 
 export function Header({ onMenuClick }: { onMenuClick: () => void }) {
+    const pathname = usePathname()
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+    const [user, setUser] = useState<AuthUser | null>(null)
+
     const handleLogout = async () => {
         try {
-            const res = await apiAuth.post("logout")
-
-            window.location.href = "/auth/login" 
+            await apiAuth.post("logout")
+            setIsAuthenticated(false)
+            setUser(null)
+            window.location.href = "/auth/login"
         } catch (err) {
-            console.error("Ошибка при выходе из системы", err)
+            console.error("Logout error", err)
+            window.location.href = "/auth/login"
         }
     }
 
     useEffect(() => {
-        fetch("/api/auth/me", {
-            credentials: "include"
-        })
+        fetch("/api/auth/me", { credentials: "include" })
             .then(res => {
                 if (!res.ok) throw new Error("Unauthenticated")
                 return res.json()
@@ -40,12 +48,17 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
             .then(data => {
                 if (data.authenticated) {
                     setIsAuthenticated(true)
+                    setUser({ userId: data.userId, name: data.name || "" })
                 } else {
                     setIsAuthenticated(false)
+                    setUser(null)
                 }
             })
-            .catch(() => setIsAuthenticated(false))
-    }, [])
+            .catch(() => {
+                setIsAuthenticated(false)
+                setUser(null)
+            })
+    }, [pathname])
 
     return (
         <header className="fixed left-0 right-0 top-0 z-30 border-b bg-background">
@@ -63,7 +76,6 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                         xmlns="http://www.w3.org/2000/svg"
                         className="text-primary"
                     >
-                        {/* Замените этот путь полным путем вашего логотипа */}
                         <path
                             d="M16 2C8.268 2 2 8.268 2 16C2 23.732 8.268 30 16 30C23.732 30 30 23.732 30 16C30 8.268 23.732 2 16 2Z"
                             stroke="currentColor"
@@ -115,13 +127,14 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="relative">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarImage src="/placeholder.svg" alt="User" />
-                                            <AvatarFallback>U</AvatarFallback>
+                                            <AvatarFallback>
+                                                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                                            </AvatarFallback>
                                         </Avatar>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                    <DropdownMenuLabel>{user?.name || "My Account"}</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <Link href="/profile">Profile</Link>
