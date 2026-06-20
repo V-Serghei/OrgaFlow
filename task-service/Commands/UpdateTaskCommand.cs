@@ -7,7 +7,7 @@ public class UpdateTaskCommand : ICommand, IRequiresDependencies
 {
     private readonly TaskDto _taskDto;
     private ITaskRepository _repository;
-    private ETask _originalTask;
+    private ETask _originalTask = null!;
 
     public UpdateTaskCommand(TaskDto taskDto, ITaskRepository repository)
     {

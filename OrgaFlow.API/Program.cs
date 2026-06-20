@@ -45,7 +45,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 // Configure HttpClient for external AuthService with custom handler
 builder.Services
     .AddHttpClient("AuthService",
-        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]); })
+        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]!); })
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
@@ -57,7 +57,7 @@ builder.Services.AddTransient<AuthTokenHandler>();
 builder.Services.AddHttpClient("TaskService",
         client =>
         {
-            client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]);
+            client.BaseAddress = new Uri(builder.Configuration["TaskService:BaseUrl"]!);
         })
     .AddHttpMessageHandler<AuthTokenHandler>()
     .ConfigurePrimaryHttpMessageHandler(() =>
@@ -69,7 +69,7 @@ builder.Services.AddHttpClient("TaskService",
         };
     });
 builder.Services.AddHttpClient("EmailService",
-        client => { client.BaseAddress = new Uri(builder.Configuration["EmailService:BaseUrl"]); })
+        client => { client.BaseAddress = new Uri(builder.Configuration["EmailService:BaseUrl"]!); })
     .ConfigurePrimaryHttpMessageHandler(() =>
     {
         var handler = new HttpClientHandler
@@ -185,7 +185,7 @@ builder.Services.AddAuthentication("Bearer")
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"])),
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"]!)),
 
             ValidateIssuer = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],

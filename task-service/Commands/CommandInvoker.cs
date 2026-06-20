@@ -189,7 +189,7 @@ public class CommandInvoker
 
     private class CommandWrapper
     {
-        public ICommand Command { get; set; }
+        public ICommand Command { get; set; } = null!;
 
         public CommandWrapper()
         {

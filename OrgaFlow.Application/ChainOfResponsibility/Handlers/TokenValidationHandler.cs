@@ -45,7 +45,7 @@ public class TokenValidationHandler<TRequest, TResponse> : BaseRequestHandler<TR
                     
                     var identity = new ClaimsIdentity(new[]
                     {
-                        new Claim(ClaimTypes.NameIdentifier, userInfo.UserId ?? string.Empty),
+                        new Claim(ClaimTypes.NameIdentifier, userInfo!.UserId ?? string.Empty),
                         new Claim(ClaimTypes.Name, userInfo.UserName ?? string.Empty),
                         new Claim(ClaimTypes.Role, userInfo.Role ?? "User"),
                         new Claim(ClaimTypes.Email, userInfo.Email ?? string.Empty)

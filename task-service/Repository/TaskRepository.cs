@@ -307,7 +307,6 @@ public class TaskRepository : ITaskRepository
         {
             throw new InvalidOperationException($"Failed to delete task with ID {id}", ex);
         }
-        return false;
     }
 
     public async Task RestoreAsync(int id)

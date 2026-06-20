@@ -12157,6 +12157,118 @@
           }
         }
       }
+    },
+    {
+      "$id": "44",
+      "Command": {
+        "type": "CreateTaskCommand",
+        "taskDto": {
+          "$id": "1",
+          "Id": 0,
+          "Name": "Serghei Alex Vistovschii",
+          "Description": "890",
+          "Status": 2,
+          "Importance": 2,
+          "Priority": "high",
+          "StartDate": "2023-10-01T09:00:00Z",
+          "EndDate": "2023-10-01T09:00:00Z",
+          "Notify": false,
+          "ParentId": null,
+          "Children": {
+            "$id": "2",
+            "$values": []
+          },
+          "AssignedUserId": 0,
+          "Type": "meeting",
+          "StartTime": "",
+          "EndTime": "",
+          "Location": "",
+          "IsAllDay": true,
+          "IsRecurring": false,
+          "RecurrencePattern": "",
+          "AssignedTo": "Alex K.",
+          "CreatedBy": "V-Serghei",
+          "CreatedAt": "2026-06-20T15:19:57.2533259Z",
+          "Participants": {
+            "$id": "3",
+            "$values": []
+          },
+          "Tags": {
+            "$id": "4",
+            "$values": [
+              {
+                "$id": "5",
+                "Id": 5,
+                "Name": "Bug",
+                "Color": "bg-red-100 text-red-800",
+                "TaskId": 0
+              },
+              {
+                "$id": "6",
+                "Id": 6,
+                "Name": "Enhancement",
+                "Color": "bg-emerald-100 text-emerald-800",
+                "TaskId": 0
+              }
+            ]
+          },
+          "Attachments": null
+        },
+        "createdTask": {
+          "$id": "1",
+          "Id": 4,
+          "Name": "Serghei Alex Vistovschii",
+          "Description": "890",
+          "Status": 2,
+          "Importance": 2,
+          "StartDate": "2023-10-01T09:00:00Z",
+          "EndDate": "2023-10-01T09:00:00Z",
+          "Notify": false,
+          "ParentId": null,
+          "Type": "meeting",
+          "StartTime": "",
+          "EndTime": "",
+          "Location": "",
+          "IsAllDay": true,
+          "IsRecurring": false,
+          "RecurrencePattern": "",
+          "AssignedTo": "Alex K.",
+          "CreatedBy": "V-Serghei",
+          "CreatedAt": "2026-06-20T15:19:57.3017125Z",
+          "IsDeleted": false,
+          "Participants": {
+            "$id": "2",
+            "$values": []
+          },
+          "Tags": {
+            "$id": "3",
+            "$values": [
+              {
+                "$id": "4",
+                "Id": 5,
+                "Name": "Bug",
+                "Color": "bg-red-100 text-red-800",
+                "TaskId": 4
+              },
+              {
+                "$id": "5",
+                "Id": 6,
+                "Name": "Enhancement",
+                "Color": "bg-emerald-100 text-emerald-800",
+                "TaskId": 4
+              }
+            ]
+          },
+          "Attachments": {
+            "$id": "6",
+            "$values": []
+          },
+          "Children": {
+            "$id": "7",
+            "$values": []
+          }
+        }
+      }
     }
   ]
 }

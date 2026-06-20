@@ -2,6 +2,6 @@ namespace OrgaFlow.Contracts.DTO;
 
 public class AuthResponseDeleteDto
 {
-    public string Message { get; set; }
-    public string UserId { get; set; }
+    public string Message { get; set; } = null!;
+    public string UserId { get; set; } = null!;
 }

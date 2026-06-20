@@ -2,7 +2,7 @@ namespace OrgaFlow.Application.ChainOfResponsibility;
 
 public abstract class BaseRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
 {
-    protected IRequestHandler<TRequest, TResponse> _nextHandler;
+    protected IRequestHandler<TRequest, TResponse> _nextHandler = null!;
         
     public IRequestHandler<TRequest, TResponse> SetNext(IRequestHandler<TRequest, TResponse> nextHandler)
     {

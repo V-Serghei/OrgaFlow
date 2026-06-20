@@ -21,7 +21,7 @@ namespace auth_service.Services
 
         public string GenerateToken(CreateTokenDto userDto)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secret!));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
@@ -48,7 +48,7 @@ namespace auth_service.Services
         public ClaimsPrincipal ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_secret);
+            var key = Encoding.UTF8.GetBytes(_secret!);
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
@@ -67,7 +67,7 @@ namespace auth_service.Services
             }
             catch
             {
-                return null;
+                return null!;
             }
         }
     }

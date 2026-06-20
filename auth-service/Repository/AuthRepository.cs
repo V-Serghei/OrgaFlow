@@ -24,12 +24,12 @@ public class AuthRepository : IAuthRepository
 
     public async Task<AuthDbSession> GetSessionAsync(Guid sessionId)
     {
-        return await _context.AuthDbSession.FindAsync(sessionId);
+        return (await _context.AuthDbSession.FindAsync(sessionId))!;
     }
 
     public async Task<AuthDbSession> GetSessionByTokenAsync(string token)
     {
-        return await _context.AuthDbSession.FirstOrDefaultAsync(s => s.Token == token);
+        return (await _context.AuthDbSession.FirstOrDefaultAsync(s => s.Token == token))!;
     }
 
     public async Task<AuthDbSession> UpdateSessionAsync(AuthDbSession session)
@@ -37,7 +37,7 @@ public class AuthRepository : IAuthRepository
         var existingSession = await _context.AuthDbSession.FindAsync(session.Id);
         if (existingSession == null)
         {
-            return null;
+            return null!;
         }
 
         existingSession.Token = session.Token;

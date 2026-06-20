@@ -5,6 +5,6 @@ namespace OrgaFlow.Contracts.Responses;
 public record UserLoginResponse
 {
     public UserDto? User { get; set; }
-    public string Message { get; set; }
+    public string Message { get; set; } = null!;
     public bool IsSuccess { get; set; }
 }

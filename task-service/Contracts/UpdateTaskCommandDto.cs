@@ -5,7 +5,7 @@ namespace task_service.Contracts;
 
 public class UpdateTaskCommandDto : CommandDto
 {
-    public TaskDto TaskDto { get; set; }
+    public TaskDto TaskDto { get; set; } = null!;
         
     public UpdateTaskCommandDto()
     {

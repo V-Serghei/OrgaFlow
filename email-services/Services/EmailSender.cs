@@ -22,7 +22,7 @@ public class EmailSender : IEmailSender
             Console.WriteLine($"Начало отправки письма на {request.To}");
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("OrgaFlow", _configuration["EmailSettings:From"]));
+            message.From.Add(new MailboxAddress("OrgaFlow", _configuration["EmailSettings:From"]!));
             message.To.Add(new MailboxAddress("", request.To));
             message.Subject = request.Subject;
             message.Body = new TextPart("plain")
@@ -34,14 +34,14 @@ public class EmailSender : IEmailSender
 
             Console.WriteLine("Устанавливаю соединение с SMTP-сервером...");
             await client.ConnectAsync(
-                _configuration["EmailSettings:SmtpServer"], 
-                int.Parse(_configuration["EmailSettings:SmtpPort"]),
+                _configuration["EmailSettings:SmtpServer"]!,
+                int.Parse(_configuration["EmailSettings:SmtpPort"]!),
                 MailKit.Security.SecureSocketOptions.SslOnConnect);
 
             Console.WriteLine("Прохожу аутентификацию...");
             await client.AuthenticateAsync(
-                _configuration["EmailSettings:Username"], 
-                _configuration["EmailSettings:Password"]);
+                _configuration["EmailSettings:Username"]!,
+                _configuration["EmailSettings:Password"]!);
 
             Console.WriteLine("Отправка письма...");
             await client.SendAsync(message);

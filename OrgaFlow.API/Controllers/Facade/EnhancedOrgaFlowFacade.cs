@@ -213,11 +213,11 @@ public class EnhancedOrgaFlowFacade: IOrgaFlowFacade
     public async Task DeleteUserAsync(HttpRequest request, HttpResponse response)
     {
         var userId = request.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
+
         var req = new UserOperationRequest
         {
             Operation = "Delete",
-            UserId = userId
+            UserId = userId!
         };
         
         var result = await _chainManager.ProcessUserRequest(req, "DeleteUser",response);

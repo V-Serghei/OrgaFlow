@@ -23,7 +23,7 @@ builder.Services.AddDbContext<TaskDbContext>(options =>
 
 builder.Services
     .AddHttpClient("AuthService",
-        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]); })
+        client => { client.BaseAddress = new Uri(builder.Configuration["AuthService:BaseUrl"]!); })
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
         ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true

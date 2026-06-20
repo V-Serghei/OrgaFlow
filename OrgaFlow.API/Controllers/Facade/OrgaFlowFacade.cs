@@ -16,7 +16,6 @@ public class OrgaFlowFacade : IOrgaFlowFacade
     private readonly IEmailService _emailService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IHttpContextAccessor _contextAccessor;
-    private IOrgaFlowFacade _orgaFlowFacadeImplementation;
 
 
     public OrgaFlowFacade(IUserService userService, IHttpClientFactory httpClientFactory, IHttpContextAccessor contextAccessor, ITaskService taskService, IEmailService emailService)
@@ -58,7 +57,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddDays(30)
         };
-        response.Cookies.Append("AuthToken", token.Token, cookieOptions);
+        response.Cookies.Append("AuthToken", token!.Token, cookieOptions);
 
         return new { User = createdUser, Token = token.Token };
     }
@@ -86,7 +85,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddDays(30)
         };
-        response.Cookies.Append("AuthToken", token.Token, cookieOptions);
+        response.Cookies.Append("AuthToken", token!.Token, cookieOptions);
 
         return new { User = loginResult, Token = token.Token };
     }
@@ -119,7 +118,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
         var deleteResponse = await client.DeleteAsync("session-delete");
         var deleteResult = await deleteResponse.Content.ReadFromJsonAsync<AuthResponseDeleteDto>();
 
-        await _userService.DeleteUserAsync(deleteResult.UserId);
+        await _userService.DeleteUserAsync(deleteResult!.UserId);
         response.Cookies.Delete("AuthToken");
     }
 
@@ -193,7 +192,7 @@ public class OrgaFlowFacade : IOrgaFlowFacade
 
     public Task<CommandState> GetCommandState()
     {
-        return _orgaFlowFacadeImplementation.GetCommandState();
+        throw new NotImplementedException();
     }
 
     // ---------------- EMAIL ----------------
