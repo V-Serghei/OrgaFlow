@@ -25,7 +25,7 @@ export default function Page() {
     const [authDetails, setAuthDetails] = useState({
         provider: "mail",
         username: "vistovskii2002@mail.ru",
-        password: "",
+        password: "trPKH3Mny9F79R5s8BNm",
     });
 
     useEffect(() => {

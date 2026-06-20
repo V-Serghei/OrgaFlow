@@ -1,12 +1,12 @@
 // Create or update the EmailMessage interface to include all required properties
 export interface EmailMessage {
-    uid: string; // <-- Добавить UID
+    uid: string; 
     subject?: string;
     from?: string;
-    date: string; // или Date
+    date: string; 
     bodyPreview?: string;
-    bodyHtml?: string; // Для детального просмотра
-    bodyText?: string; // Для детального просмотра
+    bodyHtml?: string; 
+    bodyText?: string; 
     read: boolean;
     starred?: boolean;
 }

@@ -3,6 +3,8 @@ using OrgaFlow.Contracts.DTO;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using OrgaFlow.Application.Controllers.Facade;
+using OrgaFlow.Contracts.Requests.Tasks;
 
 namespace OrgaFlow.Application.Controllers.TaskController
 {
@@ -11,10 +13,12 @@ namespace OrgaFlow.Application.Controllers.TaskController
     public class TaskController : ControllerBase
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IOrgaFlowFacade _facade;
 
-        public TaskController(IHttpClientFactory httpClientFactory)
+        public TaskController(IHttpClientFactory httpClientFactory, IOrgaFlowFacade facade)
         {
             _httpClientFactory = httpClientFactory;
+            _facade = facade;
         }
 
         private HttpClient CreateClientWithAuthCookie()
@@ -29,88 +33,249 @@ namespace OrgaFlow.Application.Controllers.TaskController
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks()
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks(
+            [FromQuery] string sortBy = "newest",
+            [FromQuery] bool? notificationsEnabled = null)
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.GetAsync("");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var tasks = await response.Content.ReadFromJsonAsync<IEnumerable<TaskDto>>();
-                return Ok(tasks);
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    var result = await _facade.GetSortedTasksAsync(sortBy, notificationsEnabled);
+                    return Ok(result);
+                }
+                
+                return Ok(await _facade.GetAllTasksAsync());
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
 
-            return StatusCode((int)response.StatusCode);
+            }
+        }
+        [HttpGet("user/{currentUser}")]
+        public async Task<ActionResult<IEnumerable<TaskDto>>> GetAllTasks(
+            [FromRoute] string currentUser,
+            [FromQuery] string sortBy = "newest",
+            [FromQuery] bool? notificationsEnabled = null
+            )
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    var result = await _facade.GetSortedTasksUserIdAsync(currentUser, sortBy, notificationsEnabled);
+                    return Ok(result);
+                }
+                
+                return Ok(await _facade.GetAllTasksAsync());
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<TaskDto>> GetTaskById(int id)
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.GetAsync($"{id}");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var task = await response.Content.ReadFromJsonAsync<TaskDto>();
-                if (task == null) return NotFound();
+                var task = await _facade.GetTaskByIdAsync(id);
                 return Ok(task);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
 
-            return StatusCode((int)response.StatusCode);
+            }
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskDto>> CreateTask([FromBody] TaskDto taskDto)
+        public async Task<ActionResult<TaskDto>> CreateTask([FromBody] TaskRequest taskDto)
         {
-            if (!ModelState.IsValid)
+            try
             {
-                return BadRequest(ModelState);
-            }
+                var task = new TaskDto(
+                    Id: 0,
+                    Name: taskDto.Name,
+                    Description: taskDto.Description,
+                    Status: taskDto.Status,
+                    Importance: taskDto.Importance,
+                    Type: taskDto.Type,
+                    CreatedAt: DateTime.UtcNow,
+                    CreatedBy: taskDto.CreatedBy,
+                    AssignedTo: taskDto.AssignedTo,
+                    StartDate: taskDto.StartDate,
+                    EndDate: taskDto.EndDate,
+                    StartTime: taskDto.StartTime,
+                    EndTime: taskDto.EndTime,
+                    Location: taskDto.Location,
+                    IsAllDay: taskDto.IsAllDay,
+                    IsRecurring: taskDto.IsRecurring,
+                    RecurrencePattern: taskDto.RecurrencePattern,
+                    Notify: taskDto.Notify,
+                    ParentId: taskDto.ParentId,
+                    Children: new List<TaskDto>(),
+                    Participants: taskDto.Participants.Select(p => new ParticipantDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Avatar = p.Avatar
+                    }).ToList(),
+                    Tags: taskDto.Tags.Select(t => new TagDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Color = t.Color
+                    }).ToList(),
+                    Attachments: new List<AttachmentDto>()
+                );
 
-            var client = CreateClientWithAuthCookie();
-            var response = await client.PostAsJsonAsync("", taskDto);
-            if (response.IsSuccessStatusCode)
+                var result = await _facade.CreateTaskAsync(task);
+            return Ok(result);
+            }
+            catch (UnauthorizedAccessException ex)
             {
-                var createdTask = await response.Content.ReadFromJsonAsync<TaskDto>();
-                return CreatedAtAction(nameof(GetTaskById), new { id = taskDto.Id }, taskDto);
-            }
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
 
-            return StatusCode((int)response.StatusCode);
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskDto taskDto)
+        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskUpdateRequest taskDto)
         {
-            if (id == 0)
+            try
             {
-                return BadRequest("ID в пути и теле запроса не совпадают");
-            }
+                
+                var task = new TaskDto(
+                    Id: id,
+                    Name: taskDto.Name,
+                    Description: taskDto.Description,
+                    Status: taskDto.Status,
+                    Importance: taskDto.Importance,
+                    Type: taskDto.Type,
+                    CreatedAt: DateTime.UtcNow,
+                    CreatedBy: taskDto.UpdatedBy,
+                    AssignedTo: taskDto.AssignedTo,
+                    StartDate: taskDto.StartDate,
+                    EndDate: taskDto.EndDate,
+                    StartTime: taskDto.StartTime,
+                    EndTime: taskDto.EndTime,
+                    Location: taskDto.Location,
+                    IsAllDay: taskDto.IsAllDay,
+                    IsRecurring: taskDto.IsRecurring,
+                    RecurrencePattern: taskDto.RecurrencePattern,
+                    Notify: taskDto.Notify,
+                    ParentId: taskDto.ParentId,
+                    Children: new List<TaskDto>(),
+                    Participants: taskDto.Participants.Select(p => new ParticipantDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Avatar = p.Avatar
+                    }).ToList(),
+                    Tags: taskDto.Tags.Select(t => new TagDto
+                    {
+                        Id = t.Id,
+                        Name = t.Name,
+                        Color = t.Color
+                    }).ToList(),
+                    Attachments: new List<AttachmentDto>()
+                );
 
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
 
-            taskDto = taskDto with { Id = id };
-            var client = CreateClientWithAuthCookie();
-            var response = await client.PutAsJsonAsync($"{id}", taskDto);
-            if (response.IsSuccessStatusCode)
-            {
+                await _facade.UpdateTaskAsync(id, task);
                 return NoContent();
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
 
-            return StatusCode((int)response.StatusCode);
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
-            var client = CreateClientWithAuthCookie();
-            var response = await client.DeleteAsync($"{id}");
-            if (response.IsSuccessStatusCode)
+            try
             {
+                await _facade.DeleteTaskAsync(id);
                 return NoContent();
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
 
-            return StatusCode((int)response.StatusCode);
+            }
+        }
+        
+        [HttpPost("undo")]
+        public async Task<IActionResult> UndoLastOperation()
+        {
+            try
+            {
+                var result = await _facade.UndoLastOperationAsync();
+                if (result)
+                {
+                    return Ok(new { message = "Операция отменена успешно" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Нет операций для отмены" });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Ошибка при отмене операции", details = ex.Message });
+            }
+        }
+
+        [HttpPost("redo")]
+        public async Task<IActionResult> RedoLastOperation()
+        {
+            try
+            {
+                var result = await _facade.RedoLastOperationAsync();
+                if (result)
+                {
+                    return Ok(new { message = "Операция повторена успешно" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Нет операций для повтора" });
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Ошибка при повторе операции", details = ex.Message });
+            }
+        }
+        [HttpGet("commands/state")]
+        public async Task<IActionResult> GetCommandState()
+        {
+            var result = await _facade.GetCommandState();
+            if (result != null)
+            {
+                return Ok(new
+                {
+                    canUndo = result.CanUndo,
+                    canRedo = result.CanRedo
+                });
+            }
+            else
+            {
+                return NotFound(new { message = "Состояние команд не найдено" });
+            }
         }
     }
 }

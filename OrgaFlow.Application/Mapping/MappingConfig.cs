@@ -3,9 +3,11 @@ using AutoMapper;
 using Mapster;
 using OrgaFlow.Application.Commands.User.UserCreate;
 using OrgaFlow.Application.Queries.User.GetUsers;
+using OrgaFlow.Contracts.DTO;
 using OrgaFlow.Contracts.DTO.Request;
 using OrgaFlow.Contracts.Models;
 using OrgaFlow.Contracts.Requests;
+using OrgaFlow.Contracts.Requests.User;
 using OrgaFlow.Contracts.Responses;
 using OrgaFlow.Domain.Entities;
 
@@ -36,5 +38,17 @@ public abstract class MappingConfig
 
         TypeAdapterConfig<UserModelView, UserCreateRequest>.NewConfig()
             .Map(dist => dist.UserData, src => src);
+        TypeAdapterConfig<UserRegisterRequest, UserCreateRequest>.NewConfig()
+            .Map(dist => dist.UserData, src => src);
+        TypeAdapterConfig<UserCreateRequest, UserRegisterRequest>.NewConfig()
+            .Map(dist => dist, src => src.UserData);
+        TypeAdapterConfig<UserLoginResponse, User>.NewConfig()
+            .Map(dist => dist, src => src.User);
+        TypeAdapterConfig<User, UserLoginResponse>.NewConfig()
+            .Map(dist => dist.User, src => src);
+        TypeAdapterConfig<UserDto, User>.NewConfig()
+            .Map(dist => dist, src => src);
+        TypeAdapterConfig<User, UserDto>.NewConfig()
+            .Map(dist => dist, src => src);
     }
 }

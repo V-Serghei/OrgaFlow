@@ -1,4 +1,3 @@
-using MediatR;
 using OrgaFlow.Contracts.Responses;
 
 namespace OrgaFlow.Application.Commands.User.UserDelete;

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OrgaFlow.Contracts.Requests;
-using OrgaFlow.Infrastructure.Proxy;
 using System.Threading.Tasks;
+using OrgaFlow.Application.Controllers.Facade;
 
 namespace OrgaFlow.Application.Controllers.Mail;
 
@@ -9,18 +9,17 @@ namespace OrgaFlow.Application.Controllers.Mail;
 [Route("api/[controller]")]
 public class MailController : ControllerBase
 {
-    private readonly EmailProxyService _emailProxy;
-
-    public MailController(EmailProxyService emailProxy)
+    
+    private readonly IOrgaFlowFacade _facade;
+    public MailController( IOrgaFlowFacade facade)
     {
-        _emailProxy = emailProxy;
+        _facade = facade;
     }
 
     [HttpPost("inbox")]
     public async Task<IActionResult> GetInbox([FromBody] EmailAuthVmRequest auth)
     {
-        var emails = await _emailProxy.GetInboxAsync(auth);
-        return Ok(emails);
+        return Ok(await _facade.GetInboxAsync(auth));
     }
 
     [HttpPost("trash")]
@@ -28,7 +27,7 @@ public class MailController : ControllerBase
     {
         try
         {
-            await _emailProxy.TrashEmailsAsync(request);
+            await _facade.TrashEmailsAsync(request);
             return Ok(new { message = "Emails moved to trash." });
         }
         catch (HttpRequestException ex)
@@ -46,7 +45,7 @@ public class MailController : ControllerBase
     {
          try
          {
-            var emailDetails = await _emailProxy.GetEmailDetailsAsync(request.Uid, request.Auth);
+            var emailDetails = await _facade.GetMessageDetailsAsync(request.Uid, request.Auth);
             if (emailDetails == null)
             {
                 return NotFound();
@@ -67,7 +66,7 @@ public class MailController : ControllerBase
     {
          try
          {
-             await _emailProxy.SendEmailAsync(request);
+             await _facade.SendEmailAsync(request);
              return Ok(new { message = "Email sent successfully!" });
          }
          catch (HttpRequestException ex)

@@ -1,6 +1,7 @@
 using MediatR;
+using task_service.Composite;
 using task_service.Domain;
 
 namespace task_service.Application.Tasks.Queries;
 
-public class GetAllTasksQuery() : IRequest<IEnumerable<ETask>>;
+public record GetAllTasksQuery : IRequest<IEnumerable<TaskDto>>;

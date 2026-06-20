@@ -1,20 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { apiAuth } from "@/lib/api-auth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast"
+
 export default function RegisterPage() {
     const router = useRouter()
     const { toast } = useToast()
 
     const [formData, setFormData] = useState({
-        name: "",
+        firstName: "",
+        lastName: "",
+        username: "",
         email: "",
         password: "",
         confirmPassword: "",
@@ -23,7 +27,7 @@ export default function RegisterPage() {
 
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (formData.password !== formData.confirmPassword) {
@@ -48,9 +52,15 @@ export default function RegisterPage() {
 
         setIsLoading(true)
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false)
+        try {
+            const res = await apiAuth.post("create", {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                password: formData.password,
+                userName: formData.username,
+                email: formData.email,
+                
+            })
 
             toast({
                 id: Date.now().toString(),
@@ -59,25 +69,54 @@ export default function RegisterPage() {
             })
 
             router.push("/auth/login")
-        }, 1500)
+        } catch (error: any) {
+            toast({
+                id: Date.now().toString(),
+                title: "Registration failed",
+                description: error.response?.data || "Something went wrong",
+                variant: "destructive",
+            })
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     return (
         <div className="flex min-h-screen items-center justify-center px-4 py-12">
             <Card className="mx-auto w-full max-w-md">
-                <CardHeader className="space-y-1 text-center">
-                    <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-                    <CardDescription>Enter your information to create a TaskMaster account</CardDescription>
-                </CardHeader>
                 <form onSubmit={handleSubmit}>
+                    <CardHeader className="space-y-1 text-center">
+                        <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+                        <CardDescription>Enter your information to create a TaskMaster account</CardDescription>
+                    </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Full Name</Label>
+                            <Label htmlFor="firstName">First Name</Label>
                             <Input
-                                id="name"
-                                placeholder="John Doe"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                id="firstName"
+                                placeholder="John"
+                                value={formData.firstName}
+                                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                                id="lastName"
+                                placeholder="Doe"
+                                value={formData.lastName}
+                                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="username">UserName</Label>
+                            <Input
+                                id="username"
+                                placeholder="J1o1h1n1D1o1e"
+                                value={formData.username}
+                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                 required
                             />
                         </div>
@@ -145,4 +184,3 @@ export default function RegisterPage() {
         </div>
     )
 }
-
