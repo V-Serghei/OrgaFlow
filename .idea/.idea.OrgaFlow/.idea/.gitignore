@@ -1,13 +1,27 @@
-﻿# Default ignored files
+# Default ignored files
 /shelf/
 /workspace.xml
+
 # Rider ignored files
 /contentModel.xml
 /projectSettingsUpdater.xml
 /modules.xml
 /.idea.OrgaFlow.iml
+
 # Editor-based HTTP Client requests
 /httpRequests/
-# Datasource local storage ignored files
+
+# Datasource local storage — могут содержать пароли к БД
 /dataSources/
 /dataSources.local.xml
+/dataSources.xml
+
+# Личные настройки редактора (не шарятся с командой)
+/encodings.xml
+/indexLayout.xml
+/jsLibraryMappings.xml
+/vcs.xml
+
+# AI-ассистенты
+/cody_history.xml
+copilot.data.migration.ask2agent.xml

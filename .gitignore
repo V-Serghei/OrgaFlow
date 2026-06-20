@@ -1,6 +1,79 @@
+## ========================
+## .NET / C#
+## ========================
 bin/
 obj/
 /packages/
-riderModule.iml
 /_ReSharper.Caches/
-appsettings.Development.json
+*.user
+*.DotSettings.user
+riderModule.iml
+*.ncrunchproject
+*.ncrunchsolution
+
+## ========================
+## Sensitive config
+## ========================
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Staging.json
+**/appsettings.Local.json
+
+## Environment files — только example попадает в git
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+## ========================
+## Visual Studio
+## ========================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.pidb
+*.booproj
+
+## ========================
+## JetBrains Rider / IDEA
+## ========================
+# Папка конфига IDE — никогда не должна идти в git
+.idea/config/
+
+# Сгенерированные Docker-файлы Rider
+.idea/.idea.OrgaFlow/Docker/
+
+# AI-ассистенты и личная история
+.idea/**/*copilot*
+.idea/**/*cody*
+
+## ========================
+## Node.js / Next.js (frontend)
+## ========================
+node_modules/
+.next/
+.nuxt/
+out/
+dist/
+.cache/
+.parcel-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+## ========================
+## Docker
+## ========================
+*.override.yml
+docker-compose.override.yml
+docker-compose.generated.override.yml
+
+## ========================
+## OS
+## ========================
+.DS_Store
+Thumbs.db
+Desktop.ini
