@@ -19,7 +19,7 @@ riderModule.iml
 **/appsettings.Staging.json
 **/appsettings.Local.json
 
-## Environment files — только example попадает в git
+## Environment files — only .example variants are tracked
 .env
 .env.*
 !.env.example
@@ -39,15 +39,7 @@ riderModule.iml
 ## ========================
 ## JetBrains Rider / IDEA
 ## ========================
-# Папка конфига IDE — никогда не должна идти в git
-.idea/config/
-
-# Сгенерированные Docker-файлы Rider
-.idea/.idea.OrgaFlow/Docker/
-
-# AI-ассистенты и личная история
-.idea/**/*copilot*
-.idea/**/*cody*
+.idea/
 
 ## ========================
 ## Node.js / Next.js (frontend)
