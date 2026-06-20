@@ -151,20 +151,39 @@ done
 # ── Stop existing services (release DLL locks before build) ───────────────
 section "Stopping existing services"
 
+# 1. Kill by process name — most reliable; catches executables regardless of port
+powershell.exe -NonInteractive -NoProfile -Command "
+    \$names = @('task-service','OrgaFlow.API','auth-service','email-services','notification-service')
+    foreach (\$n in \$names) {
+        Get-Process -Name \$n -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+    # Catch anything running from the project bin folders
+    Get-WmiObject Win32_Process |
+        Where-Object { \$_.ExecutablePath -like '*OrgaFlow*bin*' } |
+        ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }
+" 2>/dev/null | tr -d '\r' || true
+
+# 2. Kill by port as fallback (services might not be fully started yet)
 for port in 5023 5095 5130 5165; do
-    pid=$(powershell.exe -NonInteractive -NoProfile -Command \
-        "(netstat -ano | Select-String ':${port} ') -split '\s+' | Select-Object -Last 1" 2>/dev/null | tr -d '\r\n')
-    if [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 0 ]; then
-        taskkill.exe /PID "$pid" /F /T &>/dev/null && echo -e "  ${GREEN}✓${NC} Stopped :${port} (PID $pid)" || true
+    owning_pid=$(powershell.exe -NonInteractive -NoProfile -Command \
+        "(Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue).OwningProcess | Select-Object -First 1" \
+        2>/dev/null | tr -d '\r\n')
+    if [[ "$owning_pid" =~ ^[0-9]+$ ]] && [ "$owning_pid" -gt 0 ]; then
+        taskkill.exe /PID "$owning_pid" /F /T &>/dev/null \
+            && echo -e "  ${GREEN}✓${NC} Stopped :${port} (PID $owning_pid)" || true
     fi
 done
-# Also kill by PID files from previous run
+
+# 3. Kill by PID files from previous run (wrapper cmd processes)
 for pid_file in "$RUNTIME_DIR"/*.pid; do
     [ -f "$pid_file" ] || continue
     pid=$(cat "$pid_file" 2>/dev/null | tr -d '\r\n')
     [[ "$pid" =~ ^[0-9]+$ ]] && taskkill.exe /PID "$pid" /F /T &>/dev/null || true
 done
-sleep 1
+
+# Wait for Windows to fully release file handles before the build starts
+sleep 3
+ok "Services stopped"
 
 # ── Build ─────────────────────────────────────────────────────────────────
 section "Build"
@@ -180,25 +199,55 @@ ok "Build successful"
 # ── Migrations ────────────────────────────────────────────────────────────
 section "Database migrations"
 
+# $1 = DbContext name, $2 = output-dir relative to OrgaFlow.Persistence
 run_migration() {
     local ctx="$1"
-    info "Applying $ctx..."
-    local out
-    if out=$(ASPNETCORE_ENVIRONMENT=Development dotnet ef database update \
+    local output_dir="$2"
+
+    # Detect model changes not yet covered by any migration
+    local pending=0
+    ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations has-pending-model-changes \
+        -s "$SCRIPT_DIR/OrgaFlow.API" \
+        -p "$SCRIPT_DIR/OrgaFlow.Persistence" \
+        --context "$ctx" \
+        --no-build &>/dev/null || pending=1
+
+    if [ "$pending" -eq 1 ]; then
+        local name="Auto_$(date +%Y%m%d%H%M%S)"
+        info "$ctx: model changes detected — creating migration '$name'..."
+        local add_out
+        if add_out=$(ASPNETCORE_ENVIRONMENT=Development dotnet ef migrations add "$name" \
+            -s "$SCRIPT_DIR/OrgaFlow.API" \
+            -p "$SCRIPT_DIR/OrgaFlow.Persistence" \
+            --context "$ctx" \
+            --output-dir "$output_dir" \
+            --no-build 2>&1); then
+            ok "$ctx: migration '$name' created"
+        else
+            echo -e "  ${RED}✗ Failed to create migration for $ctx${NC}"
+            echo "$add_out" | tail -5
+        fi
+    else
+        info "$ctx: no model changes"
+    fi
+
+    # Apply all pending migrations to the database
+    local update_out
+    if update_out=$(ASPNETCORE_ENVIRONMENT=Development dotnet ef database update \
         -s "$SCRIPT_DIR/OrgaFlow.API" \
         -p "$SCRIPT_DIR/OrgaFlow.Persistence" \
         --context "$ctx" \
         --no-build 2>&1); then
-        ok "$ctx applied"
+        ok "$ctx: database up to date"
     else
-        echo -e "  ${YELLOW}⚠ $ctx: no pending migrations or already up to date${NC}"
-        echo "$out" | tail -3
+        echo -e "  ${YELLOW}⚠ $ctx: migration apply failed${NC}"
+        echo "$update_out" | tail -3
     fi
 }
 
-run_migration AuthDbContext
-run_migration AppDbContext
-run_migration TaskDbContext
+run_migration AuthDbContext "Migrations/AuthDb"
+run_migration AppDbContext  "Migrations/AppDb"
+run_migration TaskDbContext "Migrations"
 
 # ── npm ───────────────────────────────────────────────────────────────────
 section "Frontend packages"

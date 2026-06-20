@@ -1,5 +1,102 @@
 [Русская версия](README.md)
 
+# OrgaFlow — Local Development
+
+## Quick Start
+
+Run everything (PostgreSQL, all services, frontend) with a single script:
+
+```bash
+bash setup-local.sh
+```
+
+The script:
+1. Checks prerequisites (.NET 10, Docker, Node.js)
+2. Generates secrets and writes `appsettings.Development.json` for each service
+3. Starts the PostgreSQL container
+4. Stops any previously running service processes (releases DLL locks)
+5. Builds the .NET solution
+6. **Automatically detects model changes and creates EF migrations if needed**
+7. Applies all pending migrations to the database
+8. Starts all backend services and the Next.js frontend
+
+Services after startup:
+
+| Service  | URL |
+|----------|-----|
+| Frontend | http://localhost:3000 |
+| API      | http://localhost:5023/swagger |
+| Auth     | http://localhost:5095/swagger |
+| Task     | http://localhost:5130/swagger |
+| Email    | http://localhost:5165/swagger |
+
+Logs: `.runtime/*.log` · Stop all: `stop-local.bat`
+
+---
+
+## Database Migrations
+
+> **When you run `setup-local.sh`, migrations are created and applied automatically.**
+> The script uses `dotnet ef migrations has-pending-model-changes` to detect if your
+> entity models have changed since the last migration. If they have, it creates a new
+> migration named `Auto_YYYYMMDDHHMMSS` and immediately applies it.
+> You do not need to do anything manually during normal development.
+
+### Manual migration (when needed)
+
+Use manual migrations when you want a descriptive name (e.g. before committing to git):
+
+**AuthDbContext**
+```bash
+dotnet ef migrations add <MigrationName> \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context AuthDbContext --output-dir Migrations/AuthDb
+
+dotnet ef database update \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context AuthDbContext
+```
+
+**AppDbContext**
+```bash
+dotnet ef migrations add <MigrationName> \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context AppDbContext --output-dir Migrations/AppDb
+
+dotnet ef database update \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context AppDbContext
+```
+
+**TaskDbContext**
+```bash
+dotnet ef migrations add <MigrationName> \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context TaskDbContext --output-dir Migrations
+
+dotnet ef database update \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context TaskDbContext
+```
+
+### Rollback a migration
+
+```bash
+dotnet ef database update <PreviousMigrationName> \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context <DbContext>
+
+dotnet ef migrations remove \
+  -s OrgaFlow.API -p OrgaFlow.Persistence \
+  --context <DbContext>
+```
+
+> **Tip:** Auto-generated migrations (`Auto_*`) created by `setup-local.sh` are real
+> migration files in `OrgaFlow.Persistence/Migrations/`. Commit them to git along with
+> your model changes so other developers get them when they pull and re-run the script.
+
+---
+
 # OrgaFlow Docker Setup
 
 ## 1. Create Docker Network
